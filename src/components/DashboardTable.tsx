@@ -43,8 +43,8 @@ const DashboardTable = () => {
 
   return (
     <div className="dashboard-card animate-slide-up" style={{ animationDelay: '0.3s' }}>
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-text-primary mb-2">Lobby Performance</h3>
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-text-primary mb-1">Lobby Performance</h3>
         <p className="text-sm text-text-secondary">Real-time progress tracking</p>
       </div>
 
@@ -100,7 +100,7 @@ const DashboardTable = () => {
       </div>
 
       {/* Total Amount */}
-      <div className="mt-6 pt-4 border-t border-border">
+      <div className="mt-4 pt-3 border-t border-border">
         <div className="flex justify-between items-center">
           <span className="text-sm font-medium text-text-secondary">Total Amount</span>
           <div className="text-right">
