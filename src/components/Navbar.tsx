@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Settings, Bell, LogOut, Menu } from 'lucide-react';
+import { Settings, Bell, LogOut, Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
+import { Link } from 'react-router-dom';
 
 const Navbar = () => {
   const [isVisible, setIsVisible] = useState(true);
@@ -30,27 +31,29 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-6 py-3">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center space-x-3 hover-scale">
-            <div className="w-10 h-10 bg-primary rounded-dashboard flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-xl font-bold text-text-primary">DashBoard</span>
-          </div>
+          <Link to="/" className="flex items-center space-x-3 hover-scale">
+            <img 
+              src="/SFA-updateLogo.png" 
+              alt="SFA Logo" 
+              className="w-12 h-12 object-contain"
+            />
+            <span className="text-xl font-bold text-text-primary">SFA</span>
+          </Link>
 
           {/* Navigation Items */}
           <div className="hidden md:flex items-center space-x-8">
-            <a href="#" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">
-              Overview
-            </a>
-            <a href="#" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">
-              Analytics
-            </a>
-            <a href="#" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">
-              Reports
-            </a>
-            <a href="#" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">
-              Settings
-            </a>
+            <Link to="/" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">
+              Home
+            </Link>
+            <Link to="/lobby-data" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">
+              Lobby Data
+            </Link>
+            <Link to="/user-info" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">
+              User Info
+            </Link>
+            <Link to="/payment" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">
+              Payment
+            </Link>
           </div>
 
           {/* Right Side */}
@@ -64,18 +67,18 @@ const Navbar = () => {
               </SheetTrigger>
               <SheetContent side="right" className="w-64">
                 <div className="flex flex-col space-y-4 mt-8">
-                  <a href="#" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
-                    Overview
-                  </a>
-                  <a href="#" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
-                    Analytics
-                  </a>
-                  <a href="#" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
-                    Reports
-                  </a>
-                  <a href="#" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
-                    Settings
-                  </a>
+                  <Link to="/" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
+                    Home
+                  </Link>
+                  <Link to="/lobby-data" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
+                    Lobby Data
+                  </Link>
+                  <Link to="/user-info" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
+                    User Info
+                  </Link>
+                  <Link to="/payment" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
+                    Payment
+                  </Link>
                   <div className="border-t border-border pt-4 mt-4">
                     <button className="w-full flex items-center space-x-2 text-text-secondary hover:text-primary hover:bg-surface-hover rounded-dashboard transition-all duration-200 py-2 px-4">
                       <Bell className="w-5 h-5" />
