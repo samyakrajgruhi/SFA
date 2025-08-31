@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { Quote as QuoteIcon } from 'lucide-react';
 
 interface QuoteProps {
-  text: string;
+  text: ReactNode;
   author?: string;
   className?: string;
 }

@@ -83,42 +83,36 @@ const Homepage = () => {
           
           <div className="grid md:grid-cols-3 gap-8 mt-16">
             <div className="text-center p-6">
-              <h3 className="text-2xl font-bold text-primary mb-4">Our Mission</h3>
+              <h3 className="text-2xl font-bold text-primary mb-4">1. हमारा मिशन</h3>
               <p className="text-text-secondary">
-                To provide immediate financial assistance to railway employees during emergencies, 
-                ensuring no one faces hardship alone.
+                रनिंग स्टाफ के बीच आर्थिक सहयोग और सहभागिता को बढ़ावा देकर, हर सदस्य को कठिन समय में संबल देना।
               </p>
             </div>
             <div className="text-center p-6">
-              <h3 className="text-2xl font-bold text-primary mb-4">Our Vision</h3>
+              <h3 className="text-2xl font-bold text-primary mb-4">2. हमारी दृष्टि</h3>
               <p className="text-text-secondary">
-                Creating a strong financial safety net across all railway divisions, 
-                fostering unity and mutual support among employees.
+                एक ऐसा सशक्त संगठन बनाना जहाँ अधिकतर सदस्य जुड़कर विश्वास, सहयोग और प्रगति की संस्कृति को आगे बढ़ाएँ।
               </p>
             </div>
             <div className="text-center p-6">
-              <h3 className="text-2xl font-bold text-primary mb-4">Our Values</h3>
+              <h3 className="text-2xl font-bold text-primary mb-4">3. हमारे मूल्य</h3>
               <p className="text-text-secondary">
-                Transparency, solidarity, and swift assistance. Every contribution matters, 
-                every member counts, and every need is addressed promptly.
+                सहभागिता, विश्वास, निस्वार्थ सहयोग, सकारात्मक सोच और एकता ही हमारे संगठन की नींव हैं।
               </p>
             </div>
           </div>
-
-          <div className="mt-12">
-            <Link to="/payment">
-              <Button size="lg" className="px-8 py-4 text-lg">
-                Join SFA Today
-              </Button>
-            </Link>
-          </div>
+          
         </div>
       </section>
 
       {/* Section 2: Quote */}
       <Quote 
-        text="Unity is strength, and when we stand together, no challenge is too big to overcome."
-        author="SFA Founding Principle"
+        text={
+          <>
+            विकल्प मिलेंगे बहुत, मार्ग भटकाने के लिए l<br />
+            संकल्प एक ही काफी है, मंजिल तक जाने के लिए ll
+          </>
+        }
         className="bg-surface"
       />
 
@@ -150,8 +144,11 @@ const Homepage = () => {
 
       {/* Section 4: Quote */}
       <Quote 
-        text="The best way to find yourself is to lose yourself in the service of others."
-        author="Mahatma Gandhi"
+        text={
+          <>
+            आप ही याची हैं, आप ही सदस्य हैं, <br /> आप ही पदाधिकारी हैं, और आप ही फाइनेंसर हैं।
+          </>
+        }
       />
 
       {/* Section 5: Leadership Team */}
