@@ -133,28 +133,31 @@ const Homepage = () => {
         className="bg-surface"
       />
 
-      {/* Section 3: Members Assisted */}
+      {/* Section 3: Key Statistics */}
       <section className="py-16 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-text-primary mb-4">Members We've Assisted</h2>
+            <h2 className="text-4xl font-bold text-text-primary mb-4">Our Impact</h2>
             <p className="text-lg text-text-secondary max-w-2xl mx-auto">
-              Real stories of how SFA has made a difference in the lives of our railway family members
+              Supporting our railway family through financial assistance and solidarity
             </p>
           </div>
           
-          {/* Desktop: Horizontal layout, Mobile: 2x2 grid */}
-          <div className="hidden md:grid md:grid-cols-4 gap-6">
-            {assistedMembers.map((member, index) => (
-              <UserCard key={index} {...member} />
-            ))}
-          </div>
-          
-          {/* Mobile: 2x2 grid */}
-          <div className="grid grid-cols-2 gap-4 md:hidden">
-            {assistedMembers.map((member, index) => (
-              <UserCard key={index} {...member} />
-            ))}
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center p-8 bg-surface rounded-lg border border-border">
+              <h3 className="text-3xl md:text-4xl font-bold text-primary mb-2">₹25,00,000</h3>
+              <p className="text-lg text-text-secondary">Total Raised So Far</p>
+            </div>
+            
+            <div className="text-center p-8 bg-surface rounded-lg border border-border">
+              <h3 className="text-3xl md:text-4xl font-bold text-primary mb-2">156</h3>
+              <p className="text-lg text-text-secondary">Members Assisted</p>
+            </div>
+            
+            <div className="text-center p-8 bg-surface rounded-lg border border-border">
+              <h3 className="text-3xl md:text-4xl font-bold text-primary mb-2">850</h3>
+              <p className="text-lg text-text-secondary">Total Members</p>
+            </div>
           </div>
         </div>
       </section>
