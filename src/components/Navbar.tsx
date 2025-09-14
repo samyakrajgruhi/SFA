@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, Menu } from 'lucide-react';
+import { LogOut, Menu, User } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
 import { Link } from 'react-router-dom';
+import { Button } from './ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Navbar = () => {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const { user, isAuthenticated, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -48,12 +51,22 @@ const Navbar = () => {
             <Link to="/lobby-data" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">
               Lobby Data
             </Link>
-            <Link to="/user-info" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">
-              User Info
-            </Link>
-            <Link to="/payment" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">
-              Payment
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link to="/user-info" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">
+                  User Info
+                </Link>
+                <Link to="/payment" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">
+                  Payment
+                </Link>
+              </>
+            ) : (
+              <Link to="/login">
+                <Button variant="outline" size="sm">
+                  Login
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Right Side */}
@@ -73,33 +86,46 @@ const Navbar = () => {
                   <Link to="/lobby-data" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
                     Lobby Data
                   </Link>
-                  <Link to="/user-info" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
-                    User Info
-                  </Link>
-                  <Link to="/payment" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
-                    Payment
-                  </Link>
+                  {isAuthenticated ? (
+                    <>
+                      <Link to="/user-info" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
+                        User Info
+                      </Link>
+                      <Link to="/payment" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
+                        Payment
+                      </Link>
+                    </>
+                  ) : (
+                    <Link to="/login" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
+                      Login
+                    </Link>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
 
             
-            {/* User Profile - Always visible */}
-            <div className="flex items-center space-x-3 p-2 hover:bg-surface-hover rounded-dashboard transition-all duration-200 cursor-pointer hover-lift">
-              <img
-                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face&auto=format"
-                alt="User"
-                className="w-8 h-8 rounded-full object-cover"
-              />
-              <div className="hidden sm:block">
-                <p className="text-sm font-medium text-text-primary">John Doe</p>
-                <p className="text-xs text-text-muted">Administrator</p>
-              </div>
-            </div>
-            
-            <button className="p-2 text-text-secondary hover:text-warning hover:bg-warning-light rounded-dashboard transition-all duration-200 hover-scale">
-              <LogOut className="w-5 h-5" />
-            </button>
+            {/* User Profile - Only visible when authenticated */}
+            {isAuthenticated ? (
+              <>
+                <div className="flex items-center space-x-3 p-2 hover:bg-surface-hover rounded-dashboard transition-all duration-200 cursor-pointer hover-lift">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="hidden sm:block">
+                    <p className="text-sm font-medium text-text-primary">{user?.name}</p>
+                    <p className="text-xs text-text-muted">{user?.email}</p>
+                  </div>
+                </div>
+                
+                <button 
+                  onClick={logout}
+                  className="p-2 text-text-secondary hover:text-warning hover:bg-warning-light rounded-dashboard transition-all duration-200 hover-scale"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </>
+            ) : null}
           </div>
         </div>
       </div>
