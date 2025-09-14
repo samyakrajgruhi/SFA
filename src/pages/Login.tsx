@@ -1,117 +1,30 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Eye, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-
-const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  rememberMe: z.boolean(),
-});
-
-const registerSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
-
-type LoginForm = z.infer<typeof loginSchema>;
-type RegisterForm = z.infer<typeof registerSchema>;
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
+
+  // Login form state
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-  const { login, register } = useAuth();
-  const navigate = useNavigate();
 
-  const loginForm = useForm<LoginForm>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      rememberMe: false,
-    },
-  });
+  // Register form state
+  const [fullName, setFullName] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regConfirmPassword, setRegConfirmPassword] = useState("");
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
 
-  const registerForm = useForm<RegisterForm>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    },
-  });
-
-  const onLoginSubmit = async (data: LoginForm) => {
-    setIsLoading(true);
-    try {
-      await login(data.email, data.password);
-      
-      toast({
-        title: "Login Successful!",
-        description: "Welcome back to SFA Railway Family Support.",
-      });
-      
-      navigate("/");
-      
-    } catch (error) {
-      toast({
-        title: "Login Failed",
-        description: "Please check your credentials and try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const onRegisterSubmit = async (data: RegisterForm) => {
-    setIsLoading(true);
-    try {
-      await register(data.email, data.password, data.name);
-      
-      toast({
-        title: "Registration Successful!",
-        description: "Your account has been created. Please sign in.",
-      });
-      
-      // Switch to login mode after successful registration
-      setIsLogin(true);
-      registerForm.reset();
-      
-    } catch (error) {
-      toast({
-        title: "Registration Failed",
-        description: "Please try again with different details.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Submit logic placeholder
   };
 
   return (
@@ -130,19 +43,31 @@ const Login = () => {
 
         {/* Auth Card */}
         <div className="bg-surface border border-border rounded-xl p-8 shadow-lg">
-          {/* Toggle Switch */}
+          {/* Login/Register Buttons */}
           <div className="flex items-center justify-center mb-8">
-            <div className="flex items-center gap-4 p-1 bg-surface-hover rounded-lg">
-              <span className={`text-sm font-medium transition-colors ${!isLogin ? 'text-text-secondary' : 'text-primary'}`}>
+            <div className="flex items-center gap-2 p-1 bg-surface-hover rounded-lg">
+              <button
+                type="button"
+                onClick={() => setIsLogin(true)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isLogin
+                    ? "bg-primary text-white shadow"
+                    : "text-text-secondary hover:bg-primary/10"
+                }`}
+              >
                 Login
-              </span>
-              <Switch 
-                checked={!isLogin}
-                onCheckedChange={(checked) => setIsLogin(!checked)}
-              />
-              <span className={`text-sm font-medium transition-colors ${isLogin ? 'text-text-secondary' : 'text-primary'}`}>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsLogin(false)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  !isLogin
+                    ? "bg-primary text-white shadow"
+                    : "text-text-secondary hover:bg-primary/10"
+                }`}
+              >
                 Register
-              </span>
+              </button>
             </div>
           </div>
 
@@ -159,224 +84,174 @@ const Login = () => {
               {isLogin ? "Welcome Back" : "Create Account"}
             </h1>
             <p className="text-text-secondary">
-              {isLogin ? "Sign in to your SFA account" : "Join the SFA Railway Family Support"}
+              {isLogin ? "Sign in to your SFA account" : "Join the SFA community"}
             </p>
           </div>
 
-          {/* Forms */}
+          {/* Conditional Forms */}
           {isLogin ? (
-            <Form {...loginForm}>
-              <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
-                {/* Email Field */}
-                <FormField
-                  control={loginForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email Address</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="Enter your email"
-                          {...field}
-                          className="h-11"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              {/* Email Field */}
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="email">
+                  Email Address
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  className="h-11"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
                 />
+              </div>
 
-                {/* Password Field */}
-                <FormField
-                  control={loginForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input
-                            type={showPassword ? "text" : "password"}
-                            placeholder="Enter your password"
-                            {...field}
-                            className="h-11 pr-10"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
-                          >
-                            {showPassword ? (
-                              <EyeOff className="w-4 h-4" />
-                            ) : (
-                              <Eye className="w-4 h-4" />
-                            )}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Remember Me & Forgot Password */}
-                <div className="flex items-center justify-between">
-                  <FormField
-                    control={loginForm.control}
-                    name="rememberMe"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center space-x-2">
-                        <FormControl>
-                          <Checkbox 
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <FormLabel className="text-sm font-normal cursor-pointer">
-                          Remember me
-                        </FormLabel>
-                      </FormItem>
-                    )}
+              {/* Password Field */}
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="password">
+                  Password
+                </label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    className="h-11 pr-10"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
                   />
-                  
-                  <Link 
-                    to="/forgot-password" 
-                    className="text-sm text-primary hover:text-primary/80 transition-colors"
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
+                    tabIndex={-1}
                   >
-                    Forgot Password?
-                  </Link>
+                    <Eye className="w-4 h-4" />
+                  </button>
                 </div>
+              </div>
 
-                {/* Submit Button */}
-                <Button 
-                  type="submit" 
-                  className="w-full h-11 text-base font-medium"
-                  disabled={isLoading}
+              {/* Remember Me & Forgot Password */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    checked={rememberMe}
+                    onCheckedChange={checked => setRememberMe(checked === true)}
+                    id="rememberMe"
+                  />
+                  <label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer">
+                    Remember me
+                  </label>
+                </div>
+                <Link 
+                  to="/forgot-password" 
+                  className="text-sm text-primary hover:text-primary/80 transition-colors"
                 >
-                  {isLoading ? "Signing In..." : "Sign In"}
-                </Button>
-              </form>
-            </Form>
+                  Forgot Password?
+                </Link>
+              </div>
+
+              {/* Submit Button */}
+              <Button 
+                type="submit" 
+                className="w-full h-11 text-base font-medium"
+              >
+                Sign In
+              </Button>
+            </form>
           ) : (
-            <Form {...registerForm}>
-              <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-6">
-                {/* Name Field */}
-                <FormField
-                  control={registerForm.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="text"
-                          placeholder="Enter your full name"
-                          {...field}
-                          className="h-11"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              {/* Full Name */}
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="fullName">
+                  Full Name
+                </label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  placeholder="Enter your full name"
+                  className="h-11"
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
                 />
+              </div>
 
-                {/* Email Field */}
-                <FormField
-                  control={registerForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email Address</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="Enter your email"
-                          {...field}
-                          className="h-11"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              {/* Email Field */}
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="regEmail">
+                  Email Address
+                </label>
+                <Input
+                  id="regEmail"
+                  type="email"
+                  placeholder="Enter your email"
+                  className="h-11"
+                  value={regEmail}
+                  onChange={e => setRegEmail(e.target.value)}
                 />
+              </div>
 
-                {/* Password Field */}
-                <FormField
-                  control={registerForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input
-                            type={showPassword ? "text" : "password"}
-                            placeholder="Enter your password"
-                            {...field}
-                            className="h-11 pr-10"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
-                          >
-                            {showPassword ? (
-                              <EyeOff className="w-4 h-4" />
-                            ) : (
-                              <Eye className="w-4 h-4" />
-                            )}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              {/* Password Field */}
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="regPassword">
+                  Password
+                </label>
+                <div className="relative">
+                  <Input
+                    id="regPassword"
+                    type={showRegPassword ? "text" : "password"}
+                    placeholder="Create a password"
+                    className="h-11 pr-10"
+                    value={regPassword}
+                    onChange={e => setRegPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRegPassword(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
+                    tabIndex={-1}
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
 
-                {/* Confirm Password Field */}
-                <FormField
-                  control={registerForm.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirm Password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input
-                            type={showConfirmPassword ? "text" : "password"}
-                            placeholder="Confirm your password"
-                            {...field}
-                            className="h-11 pr-10"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
-                          >
-                            {showConfirmPassword ? (
-                              <EyeOff className="w-4 h-4" />
-                            ) : (
-                              <Eye className="w-4 h-4" />
-                            )}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Submit Button */}
-                <Button 
-                  type="submit" 
-                  className="w-full h-11 text-base font-medium"
-                  disabled={isLoading}
+              {/* Confirm Password */}
+              <div>
+                <label
+                  className="block text-sm font-medium mb-1"
+                  htmlFor="regConfirmPassword"
                 >
-                  {isLoading ? "Creating Account..." : "Create Account"}
-                </Button>
-              </form>
-            </Form>
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <Input
+                    id="regConfirmPassword"
+                    type={showRegConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm your password"
+                    className="h-11 pr-10"
+                    value={regConfirmPassword}
+                    onChange={e => setRegConfirmPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRegConfirmPassword(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
+                    tabIndex={-1}
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <Button 
+                type="submit" 
+                className="w-full h-11 text-base font-medium"
+              >
+                Create Account
+              </Button>
+            </form>
           )}
 
           {/* Footer */}
@@ -385,7 +260,8 @@ const Login = () => {
               {isLogin ? (
                 <>
                   Don't have an account?{" "}
-                  <button 
+                  <button
+                    type="button"
                     onClick={() => setIsLogin(false)}
                     className="text-primary hover:text-primary/80 font-medium transition-colors"
                   >
@@ -395,7 +271,8 @@ const Login = () => {
               ) : (
                 <>
                   Already have an account?{" "}
-                  <button 
+                  <button
+                    type="button"
                     onClick={() => setIsLogin(true)}
                     className="text-primary hover:text-primary/80 font-medium transition-colors"
                   >
