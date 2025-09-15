@@ -1,12 +1,18 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Eye, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const { login, register } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Login form state
   const [email, setEmail] = useState("");
@@ -22,9 +28,78 @@ const Login = () => {
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Submit logic placeholder
+    if (!email || !password) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await login(email, password);
+      toast({
+        title: "Success",
+        description: "Login successful!",
+      });
+      navigate('/dashboard');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Login failed",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullName || !regEmail || !regPassword || !regConfirmPassword) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (regPassword !== regConfirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await register(regEmail, regPassword, fullName);
+      toast({
+        title: "Success",
+        description: "Registration successful! Please login.",
+      });
+      // Reset form and switch to login
+      setFullName("");
+      setRegEmail("");
+      setRegPassword("");
+      setRegConfirmPassword("");
+      setIsLogin(true);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Registration failed",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -90,7 +165,7 @@ const Login = () => {
 
           {/* Conditional Forms */}
           {isLogin ? (
-            <form className="space-y-6" onSubmit={handleSubmit}>
+            <form className="space-y-6" onSubmit={handleLogin}>
               {/* Email Field */}
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="email">
@@ -155,12 +230,13 @@ const Login = () => {
               <Button 
                 type="submit" 
                 className="w-full h-11 text-base font-medium"
+                disabled={isLoading}
               >
-                Sign In
+                {isLoading ? "Signing In..." : "Sign In"}
               </Button>
             </form>
           ) : (
-            <form className="space-y-6" onSubmit={handleSubmit}>
+            <form className="space-y-6" onSubmit={handleRegister}>
               {/* Full Name */}
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="fullName">
@@ -248,8 +324,9 @@ const Login = () => {
               <Button 
                 type="submit" 
                 className="w-full h-11 text-base font-medium"
+                disabled={isLoading}
               >
-                Create Account
+                {isLoading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
           )}
