@@ -5,6 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { auth,firestore } from "@/firebase";
+import { setDoc,doc } from "firebase/firestore";
+import { Toast } from "@radix-ui/react-toast";
+
+
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -25,18 +29,45 @@ const Login = () => {
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    try {
-      const userData = {
-        full_name: fullName,
-
-      }
-    }
+  function clearFields(){
+    setFullName("");
+    setRegEmail("");
+    setLobbyId("");
+    setCmsId("");
+    setRegPassword("");
+    setRegConfirmPassword("");
+    setShowRegPassword(false);
+    setShowRegConfirmPassword(false);
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
+    
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if(!isLogin){
+      try {
+        const userData = {
+          full_name: fullName,
+          cms_id:cmsId,
+          lobby_id:lobbyId,
+          email:regEmail,
+          password: regPassword
+        }
+
+        await setDoc(doc(firestore,"users",cmsId),userData);
+        clearFields();
+        console.log("User registered Successfully!!");
+      }
+      catch(e){
+        console.error("Failed",e)
+      }
+      finally{
+        setIsLogin(true);
+      }
+    }
   };
 
   return (
