@@ -7,12 +7,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Edit, Save, X, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import PaymentHistory from '@/components/PaymentHistory';
 
 const UserInfo = () => {
   const { user} = useAuth();
 
   const [isEditing, setIsEditing] = useState(false);
-  
+
   const [userInfo, setUserInfo] = useState({
     name: user?.name || 'User Name',
     sfaId: user?.sfaId || 'SFA000',
@@ -74,6 +75,36 @@ const UserInfo = () => {
   const handleInputChange = (field: string, value: string) => {
     setEditedInfo(prev => ({ ...prev, [field]: value }));
   };
+
+  const paymentHistory = [
+  {
+    id: '1',
+    date: '2024-05-15',
+    amount: 25,
+    paymentMode: 'UPI',
+    status: 'Completed',
+    receiver: 'Amit Verma',
+    remarks: 'Monthly contribution'
+  },
+  {
+    id: '2',
+    date: '2024-04-15',
+    amount: 25,
+    paymentMode: 'Cash',
+    status: 'Completed',
+    receiver: 'Priya Sharma',
+    remarks: 'Monthly contribution'
+  },
+  {
+    id: '3',
+    date: '2024-03-15',
+    amount: 60,
+    paymentMode: 'Bank Transfer',
+    status: 'Completed',
+    receiver: 'Ravi Kumar',
+    remarks: 'Special contribution'
+  }
+];
 
   return (
     <div className="min-h-screen bg-background">
@@ -234,6 +265,9 @@ const UserInfo = () => {
               </div>
             )}
           </Card>
+          <div className="mt-8">
+            <PaymentHistory payments={paymentHistory} />
+          </div>
         </div>
       </main>
     </div>

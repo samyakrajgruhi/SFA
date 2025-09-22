@@ -88,7 +88,8 @@ const Login = () => {
           cms_id:cmsId,
           lobby_id:lobbyId,
           email:regEmail,
-          uid:user.uid
+          role:'member',
+          uid:user.uid          
         }
         await setDoc(doc(firestore,"users",cmsId),userData);
         clearFields();
