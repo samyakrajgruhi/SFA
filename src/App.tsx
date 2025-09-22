@@ -12,8 +12,6 @@ import Payment from "./pages/Payment";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "@/components/ProtectRout.tsx";
 import ForgotPassword from "./pages/ForgotPassword";
-import AdminDashboard from "./pages/AdminDashboard";
-import Transactions from "./pages/Transactions";
 
 const queryClient = new QueryClient();
 
@@ -33,8 +31,7 @@ const App = () => (
             <Route element={<ProtectedRoute />}>
               <Route path="/user-info" element={<UserInfo />} />
               <Route path="/payment" element={<Payment />} />
-              <Route path="/transactions" element={<Transactions />} />
-              <Route path="/admin" element={<AdminDashboard />} />
+              
             </Route >
 
 
