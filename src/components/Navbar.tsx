@@ -108,7 +108,7 @@ const Navbar = () => {
             {/* User Profile - Only visible when authenticated */}
             {isAuthenticated ? (
               <>
-                <div className="flex items-center space-x-3 p-2 hover:bg-surface-hover rounded-dashboard transition-all duration-200 cursor-pointer hover-lift">
+                <Link to="/user-info" className="flex items-center space-x-3 p-2 hover:bg-surface-hover rounded-dashboard transition-all duration-200 cursor-pointer hover-lift">
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                     <User className="w-4 h-4 text-primary" />
                   </div>
@@ -116,7 +116,7 @@ const Navbar = () => {
                     <p className="text-sm font-medium text-text-primary">{user?.name}</p>
                     <p className="text-xs text-text-muted">{user?.email}</p>
                   </div>
-                </div>
+                </Link>
                 
                 <button 
                   onClick={logout}

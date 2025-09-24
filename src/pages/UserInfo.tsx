@@ -8,10 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Edit, Save, X, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import PaymentHistory, {PaymentRecord} from '@/components/PaymentHistory';
+import {doc,updateDoc, collection ,query, where, getDocs} from 'firebase/firestore';
+import {firestore} from '@/firebase';
+import {useToast} from '@/hooks/use-toast';
 
 const UserInfo = () => {
   const { user} = useAuth();
-
+  const { toast } = useToast();
+  const [isUpdating, setIsUpdating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   const [userInfo, setUserInfo] = useState({
@@ -60,12 +64,72 @@ const UserInfo = () => {
     setEditedInfo({ ...userInfo });
   };
 
-  const handleSave = () => {
-    setUserInfo({ ...editedInfo });
-    setIsEditing(false);
-    // Here you would typically make an API call to update the backend
-    alert('Profile updated successfully!');
+  const handleSave = async () => {
+     if (!user?.uid) {
+      toast({
+        title: "Error",
+        description: "User information not available. Please login again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsUpdating(true);
+
+    try{
+      const userQuery = query(collection(firestore, 'users'),where('uid','==',user.uid));
+      const userSnapshot = await getDocs(userQuery);
+
+      if(userSnapshot.empty){
+        throw new Error("User document not found");
+      }
+
+      const userDocRef = userSnapshot.docs[0].ref;
+      await updateDoc(userDocRef, {
+        full_name: editedInfo.name,
+        cms_id: editedInfo.cmsId,
+        lobby_id: editedInfo.lobby,
+        phone_number: editedInfo.phoneNumber,
+        emergency_number: editedInfo.emergencyNumber
+      });
+
+      setUserInfo({ ...editedInfo });
+      setIsEditing(false);
+
+      toast({
+        title: "Success",
+        description: "Profile updated successfully!"
+      });
+    }catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Update Failed",
+        description: error instanceof Error ? error.message : "An error occurred while updating your profile",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
+  const SaveButton = () => (
+    <Button 
+      onClick={handleSave}
+      disabled={isUpdating}
+      className="flex items-center space-x-2"
+    >
+      {isUpdating ? (
+        <>
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+          <span>Saving...</span>
+        </>
+      ) : (
+        <>
+          <Save className="w-4 h-4" />
+          <span>Save Changes</span>
+        </>
+      )}
+    </Button>
+  );
 
   const handleDiscard = () => {
     setEditedInfo({ ...userInfo });
@@ -159,7 +223,7 @@ const UserInfo = () => {
                     <Input
                       id="phone"
                       value={editedInfo.phoneNumber}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                       className="mt-1"
                     />
                   ) : (
@@ -169,26 +233,16 @@ const UserInfo = () => {
 
                 <div>
                   <Label htmlFor="email" className="text-text-secondary">Email Address</Label>
-                  {isEditing ? (
-                    <Input
-                      id="email"
-                      type="email"
-                      value={editedInfo.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.email}</p>
-                  )}
+                  <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.email}</p>
                 </div>
 
                 <div>
-                  <Label htmlFor="emergency" className="text-text-secondary">Emergency Contact</Label>
+                  <Label htmlFor="emergency" className="text-text-secondary">Emergency Number</Label>
                   {isEditing ? (
                     <Input
                       id="emergency"
                       value={editedInfo.emergencyNumber}
-                      onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
+                      onChange={(e) => handleInputChange('emergencyNumber', e.target.value)}
                       className="mt-1"
                     />
                   ) : (
@@ -203,7 +257,16 @@ const UserInfo = () => {
 
                 <div>
                   <Label className="text-text-secondary">CMS ID</Label>
-                  <p className="mt-1 p-2 bg-accent-light text-accent rounded-dashboard font-mono">{userInfo.cmsId}</p>
+                  {isEditing ? (
+                    <Input
+                      id="cmsId"
+                      value={editedInfo.cmsId}
+                      onChange={(e) => handleInputChange('cmsId', e.target.value)}
+                      className="mt-1"
+                    />
+                  ) : (
+                    <p className="mt-1 p-2 bg-accent-light text-accent rounded-dashboard font-mono">{userInfo.cmsId}</p>
+                  )}
                 </div>
 
                 <div>
@@ -226,20 +289,7 @@ const UserInfo = () => {
 
                 <div>
                   <Label htmlFor="role" className="text-text-secondary">Role</Label>
-                  {isEditing ? (
-                    <Select value={editedInfo.role} onValueChange={(value) => handleInputChange('role', value)}>
-                      <SelectTrigger className="mt-1 bg-surface border border-border">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-surface border border-border z-50">
-                        {roles.map((role) => (
-                          <SelectItem key={role} value={role} className="hover:bg-surface-hover">{role}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.role}</p>
-                  )}
+                  <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.role.toUpperCase()}</p>
                 </div>
               </div>
             </div>
@@ -255,13 +305,7 @@ const UserInfo = () => {
                   <X className="w-4 h-4" />
                   <span>Discard Changes</span>
                 </Button>
-                <Button 
-                  onClick={handleSave}
-                  className="flex items-center space-x-2"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>Save Changes</span>
-                </Button>
+                <SaveButton />
               </div>
             )}
           </Card>
