@@ -28,6 +28,9 @@ const Login = () => {
   const [regEmail, setRegEmail] = useState("");
   const [lobbyId, setLobbyId] = useState("");
   const [cmsId, setCmsId] = useState("");
+  const [sfaId, setSfaId] = useState("");
+  const [phoneNo, setPhoneNo] = useState("");
+  const [emergencyNo, setEmergencyNo] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
   const [showRegPassword, setShowRegPassword] = useState(false);
@@ -42,6 +45,9 @@ const Login = () => {
     setRegEmail("");
     setLobbyId("");
     setCmsId("");
+    setSfaId("");
+    setPhoneNo("");
+    setEmergencyNo("");
     setRegPassword("");
     setRegConfirmPassword("");
     setShowRegPassword(false);
@@ -60,8 +66,16 @@ const Login = () => {
           });
           return;
         }
+        if (!sfaId) {
+          toast({
+            title: "Error",
+            description: "SFA ID cannot be empty!",
+            variant: "destructive",
+          });
+          return;
+        }
         // Check if CMS ID already exists
-        const existingDoc = await getDoc(doc(firestore, "users", cmsId));
+        const existingDoc = await getDoc(doc(firestore, "users", sfaId));
         if (existingDoc.exists()) {
           toast({
             title:"Error",
@@ -86,18 +100,22 @@ const Login = () => {
         const userData = {
           full_name: fullName,
           cms_id:cmsId,
+          sfa_id:sfaId,
           lobby_id:lobbyId,
           email:regEmail,
           role:'member',
+          phone_number: phoneNo,
+          emergency_number: emergencyNo,
           uid:user.uid          
         }
-        await setDoc(doc(firestore,"users",cmsId),userData);
+        await setDoc(doc(firestore,"users",sfaId),userData);
         clearFields();
         toast({
           title: "Success",
           description: "User registered successfully!"
         })
         console.log("User registered Successfully!!");
+        setIsLogin(true);
       }
       catch(e){
         toast({
@@ -105,8 +123,6 @@ const Login = () => {
           description: e.message || "Please try again with different information.",
           variant: "destructive",
         });
-      }
-      finally{
         setIsLogin(true);
       }
     }else{
@@ -306,7 +322,7 @@ const Login = () => {
                   placeholder="Enter your lobby ID"
                   className="h-11"
                   value={lobbyId}
-                  onChange={e => setLobbyId(e.target.value)}
+                  onChange={e => setLobbyId(e.target.value.toUpperCase())}
                 />
               </div>
 
@@ -321,7 +337,50 @@ const Login = () => {
                   placeholder="Enter your CMS ID"
                   className="h-11"
                   value={cmsId}
-                  onChange={e => setCmsId(e.target.value)}
+                  onChange={e => setCmsId(e.target.value.toUpperCase())}
+                />
+              </div>
+
+              {/* SFA ID Field */}
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="cmsId">
+                  SFA ID <span className="text-red-600">*</span>
+                </label>
+                <Input
+                  id="sfaId"
+                  type="text"
+                  placeholder="Enter your SFA ID"
+                  className="h-11"
+                  value={sfaId}
+                  onChange={e => setSfaId(e.target.value.toUpperCase())}
+                />
+              </div>
+              {/* Phone Number Field */}
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="cmsId">
+                  Contact Number
+                </label>
+                <Input
+                  id="phoneNo"
+                  type="number"
+                  placeholder="Enter your phone number"
+                  className="h-11"
+                  value={phoneNo}
+                  onChange={e => setPhoneNo(e.target.value)}
+                />
+              </div>
+              {/* SFA ID Field */}
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="cmsId">
+                  Emergency Contact
+                </label>
+                <Input
+                  id="emergencyNo"
+                  type="number"
+                  placeholder="Enter emergency phone number"
+                  className="h-11"
+                  value={emergencyNo}
+                  onChange={e => setEmergencyNo(e.target.value)}
                 />
               </div>
 

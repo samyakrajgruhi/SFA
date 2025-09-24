@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Edit, Save, X, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import PaymentHistory from '@/components/PaymentHistory';
+import PaymentHistory, {PaymentRecord} from '@/components/PaymentHistory';
 
 const UserInfo = () => {
   const { user} = useAuth();
@@ -20,9 +20,9 @@ const UserInfo = () => {
     cmsId: user?.cmsId || 'CMS00000',
     lobby: user?.lobby || 'ANVT',
     role: user?.role || 'Member',
-    phone: user?.phone || '+91 98765 43210',
+    phoneNumber: user?.phoneNumber || '+91 98765 43210',
     email: user?.email || 'user@example.com',
-    emergencyContact: user?.emergencyContact || '+91 98765 43211'
+    emergencyNumber: user?.emergencyNumber || '+91 98765 43211'
   });
 
   const [editedInfo, setEditedInfo] = useState({ ...userInfo });
@@ -35,9 +35,9 @@ const UserInfo = () => {
         cmsId: user.cmsId || 'CMS00000',
         lobby: user.lobby || 'ANVT',
         role: user.role || 'Member',
-        phone: user.phone || '+91 98765 43210',
+        phoneNumber: user.phoneNumber || '+91 98765 43210',
         email: user.email || 'user@example.com',
-        emergencyContact: user.emergencyContact || '+91 98765 43211'
+        emergencyNumber: user.emergencyNumber || '+91 98765 43211'
       });
       setEditedInfo({
         name: user.name || 'User Name',
@@ -45,9 +45,9 @@ const UserInfo = () => {
         cmsId: user.cmsId || 'CMS00000',
         lobby: user.lobby || 'ANVT',
         role: user.role || 'Member',
-        phone: user.phone || '+91 98765 43210',
+        phoneNumber: user.phoneNumber || '+91 98765 43210',
         email: user.email || 'user@example.com',
-        emergencyContact: user.emergencyContact || '+91 98765 43211'
+        emergencyNumber: user.emergencyNumber || '+91 98765 43211'
       });
     }
   }, [user]);
@@ -158,12 +158,12 @@ const UserInfo = () => {
                   {isEditing ? (
                     <Input
                       id="phone"
-                      value={editedInfo.phone}
+                      value={editedInfo.phoneNumber}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
                       className="mt-1"
                     />
                   ) : (
-                    <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.phone}</p>
+                    <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.phoneNumber}</p>
                   )}
                 </div>
 
@@ -187,12 +187,12 @@ const UserInfo = () => {
                   {isEditing ? (
                     <Input
                       id="emergency"
-                      value={editedInfo.emergencyContact}
+                      value={editedInfo.emergencyNumber}
                       onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
                       className="mt-1"
                     />
                   ) : (
-                    <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.emergencyContact}</p>
+                    <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.emergencyNumber}</p>
                   )}
                 </div>
 
@@ -266,7 +266,7 @@ const UserInfo = () => {
             )}
           </Card>
           <div className="mt-8">
-            <PaymentHistory payments={paymentHistory} />
+            <PaymentHistory payments={paymentHistory as PaymentRecord[]} />
           </div>
         </div>
       </main>

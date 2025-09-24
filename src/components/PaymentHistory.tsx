@@ -3,11 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 
-interface PaymentRecord {
+export interface PaymentRecord {
   id: string;
   date: string;
   amount: number;
-  paymentMode: 'UPI' | 'Bank Transfer' | 'Cash' | 'Net Banking';
+  paymentMode: "UPI" | "Bank Transfer" | "Cash" | "Net Banking" | string;
   status: 'Completed' | 'Pending' | 'Failed';
   receiver: string;
   remarks?: string;

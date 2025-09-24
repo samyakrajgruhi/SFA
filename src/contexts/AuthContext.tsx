@@ -14,9 +14,9 @@ interface FirestoreUserData {
   lobby_id?: string;
   email?:string;
   uid?:string;
-  phone?: string;
+  phone_number?: string;
   role?: string;
-  emergencyContact?: string;
+  emergency_number?: string;
   sfaId?: string;
 }
 
@@ -41,9 +41,9 @@ interface UserData {
   name?: string;
   cmsId?: string;
   lobby?: string;
-  phone?: string;
+  phoneNumber?: string;
   role?: string;
-  emergencyContact?: string;
+  emergencyNumber?: string;
   sfaId?: string;
 }
 
@@ -80,8 +80,8 @@ useEffect(() => {
           lobby: userData.lobby_id,
           role: userData.role || 'Member', // Default to Member if not specified
           sfaId: userData.sfaId || `SFA${userData.cms_id?.substring(3)}`, // Generate from CMS ID if not available
-          phone: userData.phone || '+91 98765 43210',
-          emergencyContact: userData.emergencyContact || '+91 98765 43211'
+          phoneNumber: userData.phone_number || '+91 98765 43210',
+          emergencyNumber: userData.emergency_number || '+91 98765 43211'
         });
       } catch (error) {
         console.error("Error fetching user data:", error);
