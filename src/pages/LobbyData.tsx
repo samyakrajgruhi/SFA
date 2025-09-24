@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button'; // Add this import
+import { Download } from 'lucide-react'; // Add this import
 import {
   Table,
   TableBody,
@@ -115,6 +117,59 @@ const LobbyData = () => {
       remarks: 'Emergency fund'
     }
   ];
+  const downloadCsv = () => {
+    // Define the headers for the CSV
+    const headers = [
+      'Sr. No',
+      'Pay Date',
+      'Lobby',
+      'SFA ID',
+      'Name',
+      'CMS ID',
+      'Receiver',
+      'Amount (₹)',
+      'Payment Mode',
+      'Remarks'
+    ];
+    
+    // Convert the data to CSV format
+    const csvContent = [
+      headers.join(','), // Header row
+      ...sampleData.map(row => [
+        row.srNo,
+        row.payDate,
+        row.lobby,
+        row.sfaId,
+        `"${row.name}"`, // Wrap in quotes to handle names with commas
+        row.cmsId,
+        `"${row.receiver}"`, // Wrap in quotes
+        row.amount,
+        `"${row.paymentMode}"`, // Wrap in quotes
+        `"${row.remarks || ''}"` // Wrap in quotes, use empty string if null
+      ].join(','))
+    ].join('\n');
+    
+    // Create a Blob with the CSV content
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    
+    // Create a URL for the Blob
+    const url = URL.createObjectURL(blob);
+    
+    // Create a temporary link element
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${selectedLobby.replace(' ', '_')}_Payments_${new Date().toISOString().split('T')[0]}.csv`);
+    
+    // Append the link to the body
+    document.body.appendChild(link);
+    
+    // Trigger the download
+    link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   // Filter data based on selected lobby
   const sampleData = selectedLobby === 'All Lobbies' 
@@ -134,22 +189,34 @@ const LobbyData = () => {
 
           {/* Lobby Selection */}
           <Card className="p-6 mb-8">
-            <div className="flex flex-col sm:flex-row gap-4 items-center">
-              <label className="text-lg font-semibold text-text-primary whitespace-nowrap">
-                Select Lobby:
-              </label>
-              <Select value={selectedLobby} onValueChange={setSelectedLobby}>
-                <SelectTrigger className="w-full sm:w-64">
-                  <SelectValue placeholder="Choose a lobby" />
-                </SelectTrigger>
-                <SelectContent className="bg-surface border border-border z-50">
-                  {lobbies.map((lobby) => (
-                    <SelectItem key={lobby} value={lobby} className="hover:bg-surface-hover">
-                      {lobby}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+              <div className="flex flex-col sm:flex-row gap-4 items-center">
+                <label className="text-lg font-semibold text-text-primary whitespace-nowrap">
+                  Select Lobby:
+                </label>
+                <Select value={selectedLobby} onValueChange={setSelectedLobby}>
+                  <SelectTrigger className="w-full sm:w-64">
+                    <SelectValue placeholder="Choose a lobby" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-surface border border-border z-50">
+                    {lobbies.map((lobby) => (
+                      <SelectItem key={lobby} value={lobby} className="hover:bg-surface-hover">
+                        {lobby}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Add Download CSV Button */}
+              <Button 
+                onClick={downloadCsv}
+                variant="outline" 
+                className="flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download CSV</span>
+              </Button>
             </div>
           </Card>
 
