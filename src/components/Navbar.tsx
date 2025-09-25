@@ -56,9 +56,18 @@ const Navbar = () => {
                 <Link to="/user-info" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">
                   User Info
                 </Link>
+                {user?.role === 'admin' && (
+                  <Link 
+                    to="/admin" 
+                    className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium"
+                  >
+                    Admin Panel
+                  </Link>
+                )}
                 <Link to="/payment" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">
                   Payment
                 </Link>
+
               </>
             ) : (
               <Link to="/login">
@@ -98,6 +107,15 @@ const Navbar = () => {
                   ) : (
                     <Link to="/login" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
                       Login
+                    </Link>
+                  )}
+
+                  {isAuthenticated && user?.role === 'admin' && (
+                    <Link 
+                      to="/admin" 
+                      className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium"
+                    >
+                      Admin Panel
                     </Link>
                   )}
                 </div>
