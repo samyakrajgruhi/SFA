@@ -17,6 +17,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { firestore } from '@/firebase';
 import { collection, getDocs, updateDoc, doc, query, where } from 'firebase/firestore';
+import CSVImport from '@/components/admin/CSVImport';
+
 
 interface MemberData {
   id: string;
@@ -301,6 +303,11 @@ const AdminManagement = () => {
               )}
             </CardContent>
           </Card>
+          
+          {/* CSV Import Section */}
+          <div className="mt-8">
+            <CSVImport />
+          </div>
         </div>
       </main>
     </div>
