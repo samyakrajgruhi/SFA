@@ -16,8 +16,6 @@ const Payment = lazy(() => import("./pages/Payment"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const AdminManagement = lazy(() => import("./pages/AdminManagement"));
-const BeneficiaryRequest = lazy(() => import("./pages/BeneficiaryRequest"));
-const BeneficiaryManagement = lazy(() => import("./pages/BeneficiaryManagement"));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -46,8 +44,6 @@ const App = () => (
                 <Route path="/user-info" element={<UserInfo />} />
                 <Route path="/payment" element={<Payment />} />
                 <Route path="/admin" element={<AdminManagement />} />
-                <Route path="/beneficiary-request" element={<BeneficiaryRequest />} />
-                <Route path="/beneficiary-management" element={<BeneficiaryManagement />} />
               </Route>
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

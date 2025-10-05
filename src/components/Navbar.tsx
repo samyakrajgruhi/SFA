@@ -56,7 +56,7 @@ const Navbar = () => {
                 <Link to="/user-info" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">
                   User Info
                 </Link>
-                {user?.role?.toLowerCase() === 'admin' && (
+                {user?.role === 'Admin' && (
                   <>
                     <Link 
                       to="/admin" 
@@ -111,7 +111,7 @@ const Navbar = () => {
                       <Link to="/user-info" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
                         User Info
                       </Link>
-                      {user?.role?.toLowerCase() === 'admin' && (
+                      {user?.role === 'Admin' && (
                         <>
                           <Link 
                             to="/admin" 
