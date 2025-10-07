@@ -1,166 +1,165 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { Upload, CheckCircle, AlertCircle } from 'lucide-react';
-import { parseCSV } from '@/utils/csvParser';
+import { firestore } from '@/firebase';
+import { collection, doc, writeBatch } from 'firebase/firestore';
 
-const CSVImport: React.FC = () => {
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [previewData, setPreviewData] = useState<Record<string, string>[]>([]);
-  
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    
-    if (!file) {
-      setFileName(null);
-      setPreviewData([]);
-      return;
-    }
-    
-    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-      toast({
-        title: "Invalid file type",
-        description: "Please select a CSV file",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setFileName(file.name);
-    
-    // Read and parse the CSV file
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const csvContent = event.target?.result as string;
-        const parsedData = parseCSV(csvContent);
-        
-        // Show preview of first 5 rows
-        setPreviewData(parsedData.slice(0, 5));
-      } catch (error) {
-        console.error("Error parsing CSV:", error);
-        toast({
-          title: "Error parsing CSV",
-          description: "The CSV file could not be parsed correctly",
-          variant: "destructive"
-        });
-      }
+// Parse date string to get date object and month/year for filtering
+export const parseDateString = (dateString: string) => {
+  if (!dateString) {
+    const currentDate = new Date();
+    return {
+      date: currentDate,
+      month: currentDate.getMonth(),
+      year: currentDate.getFullYear()
     };
-    
-    reader.readAsText(file);
+  }
+
+  // Handle different date formats (e.g., "14-Sep-2025" or "14/09/2025")
+  const monthMap: Record<string, number> = {
+    'jan': 0, 'january': 0,
+    'feb': 1, 'february': 1,
+    'mar': 2, 'march': 2,
+    'apr': 3, 'april': 3,
+    'may': 4, 'may': 4,
+    'jun': 5, 'june': 5,
+    'jul': 6, 'july': 6,
+    'aug': 7, 'august': 7,
+    'sep': 8, 'september': 8,
+    'oct': 9, 'october': 9,
+    'nov': 10, 'november': 10,
+    'dec': 11, 'december': 11
   };
-  
-  const handleImport = async () => {
-    if (!fileName) return;
+
+  // Try to parse date with format "DD-MMM-YYYY" (e.g., "14-Sep-2025")
+  const dashParts = dateString.split('-');
+  if (dashParts.length === 3) {
+    const day = parseInt(dashParts[0]);
+    const monthPart = dashParts[1].toLowerCase();
+    const year = parseInt(dashParts[2]);
     
-    setIsLoading(true);
-    
-    try {
-      // Implementation for importing would go here
-      // This is a placeholder for demonstration
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast({
-        title: "Import successful",
-        description: "Your CSV data has been imported",
-        variant: "default"
-      });
-    } catch (error) {
-      console.error("Import error:", error);
-      toast({
-        title: "Import failed",
-        description: "There was an error importing your CSV data",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
+    let month = -1;
+    for (const [key, value] of Object.entries(monthMap)) {
+      if (monthPart.startsWith(key)) {
+        month = value;
+        break;
+      }
     }
+    
+    if (month !== -1 && !isNaN(day) && !isNaN(year)) {
+      const date = new Date(year, month, day);
+      return { date, month, year };
+    }
+  }
+
+  // Try to parse date with format "DD/MM/YYYY"
+  const slashParts = dateString.split('/');
+  if (slashParts.length === 3) {
+    const day = parseInt(slashParts[0]);
+    const month = parseInt(slashParts[1]) - 1; // Month is 0-indexed
+    const year = parseInt(slashParts[2]);
+    
+    if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+      const date = new Date(year, month, day);
+      return { date, month, year };
+    }
+  }
+
+  // Default to current date if parsing fails
+  const currentDate = new Date();
+  return {
+    date: currentDate,
+    month: currentDate.getMonth(),
+    year: currentDate.getFullYear()
   };
-  
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Import CSV Data</CardTitle>
-        <CardDescription>
-          Upload a CSV file to import data into the system
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:bg-surface transition-colors"
-               onClick={() => document.getElementById('csv-file-input')?.click()}>
-            <input
-              type="file"
-              id="csv-file-input"
-              accept=".csv"
-              className="hidden"
-              onChange={handleFileChange}
-            />
-            <Upload className="h-10 w-10 mx-auto text-text-muted mb-2" />
-            <p className="text-sm text-text-muted mb-1">
-              {fileName ? (
-                <span className="text-text-primary font-medium flex items-center justify-center gap-1">
-                  <CheckCircle className="h-4 w-4 text-success" />
-                  {fileName}
-                </span>
-              ) : (
-                "Click to upload or drag and drop"
-              )}
-            </p>
-            <p className="text-xs text-text-muted">CSV files only</p>
-          </div>
-          
-          {previewData.length > 0 && (
-            <div>
-              <h3 className="text-sm font-medium mb-2">Preview (first 5 rows):</h3>
-              <div className="overflow-x-auto border border-border rounded-lg">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-surface border-b border-border">
-                      {Object.keys(previewData[0]).map((header, i) => (
-                        <th key={i} className="px-3 py-2 text-left font-medium text-text-secondary">
-                          {header}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {previewData.map((row, i) => (
-                      <tr key={i} className="border-b border-border last:border-0">
-                        {Object.values(row).map((cell, j) => (
-                          <td key={j} className="px-3 py-2 truncate max-w-[200px]">
-                            {cell}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-          
-          <div className="flex justify-end">
-            <Button 
-              onClick={handleImport} 
-              disabled={!fileName || isLoading}
-              className="w-full sm:w-auto"
-            >
-              {isLoading ? (
-                <>
-                  <span className="animate-spin h-4 w-4 mr-2 rounded-full border-2 border-current border-t-transparent"></span>
-                  Importing...
-                </>
-              ) : "Import Data"}
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
 };
 
-export default CSVImport;
+// Generate a unique date-based ID for documents
+const getDateDigits = (dateString: string): string => {
+  const { date } = parseDateString(dateString);
+  const day = date.getDate().toString().padStart(2,'0');
+  const month = (date.getMonth() + 1).toString().padStart(2,'0');
+  const year = date.getFullYear();
+  return `${date}${month}${year}`;
+};
+
+// Process amount string to extract the numeric value
+const processAmountString = (amountStr: string): number => {
+  if (!amountStr) return 0;
+  
+  // Remove currency symbols and non-numeric characters except decimal point
+  const cleanedAmount = amountStr.replace(/[^\d.]/g, '');
+  const amount = parseFloat(cleanedAmount);
+  return isNaN(amount) ? 0 : amount;
+};
+
+// Interface for transaction records
+export interface PaymentRecord {
+  srno: string;
+  payDate: string;
+  lobby: string;
+  sfaId: string;
+  name: string;
+  cmsId: string;
+  receiver: string;
+  amount: string | number;
+  paymentMode: string;
+  remarks: string;
+}
+
+// Import CSV data to Firestore
+export const importCSVToFirestore = async (
+  csvData: PaymentRecord[],
+  batchSize: number = 500
+): Promise<{ success: boolean; imported: number; errors?: any }> => {
+  try {
+    const totalRecords = csvData.length;
+    let importedCount = 0;
+    
+    const collectionName = 'transactions';
+    
+    // Process in batches to avoid Firestore limits
+    for (let i = 0; i < totalRecords; i += batchSize) {
+      const batch = writeBatch(firestore);
+      const recordsSlice = csvData.slice(i, i + batchSize);
+      
+      recordsSlice.forEach(record => {
+        // Skip records without SFA ID or payDate
+        if (!record.sfaId || !record.payDate) return;
+        
+        // Parse the date to get month, year, and Date object
+        const { date, month, year } = parseDateString(record.payDate);
+        
+        // Creating document ID in format: SfaId_DDMMYYYY
+        const dateDigits = getDateDigits(record.payDate);
+        const docId = `${record.sfaId}_${dateDigits}`;
+
+        // Process amount (remove currency symbol, convert to number)
+        const numericAmount = typeof record.amount === 'string' 
+          ? processAmountString(record.amount)
+          : record.amount;
+
+        const docRef = doc(collection(firestore, collectionName), docId);
+
+        batch.set(docRef, {
+          sfaId: record.sfaId,
+          lobby: record.lobby,
+          amount: numericAmount,
+          date: date, // JavaScript Date object
+          dateString: record.payDate, // Original string for display
+          month: month, // 0-11
+          year: year, // Full year number
+          mode: record.paymentMode,
+          remarks: record.remarks || '',
+          receiver: record.receiver,
+          createdAt: new Date(),
+        });
+      });
+      
+      await batch.commit();
+      importedCount += recordsSlice.length;
+    }
+    
+    return { success: true, imported: importedCount };
+  } catch (error) {
+    console.error("Error importing CSV to Firestore:", error);
+    return { success: false, imported: 0, errors: error.message };
+  }
+};

@@ -295,7 +295,7 @@ const LobbyData = () => {
                     <span className="font-semibold">Total Records:</span> {filteredData.length} {searchTerm && `of ${lobbyData.length}`}
                   </div>
                   <div>
-                    <span className="font-semibold">Total Amount:</span> ₹{filteredData.reduce((sum, row) => sum + row.amount, 0)}
+                    <span className="font-semibold">Total Amount:</span> ₹{filteredData.reduce((sum, row) => sum + Number(row.amount), 0)}
                   </div>
                   <div>
                     <span className="font-semibold">Last Updated:</span> {new Date().toLocaleDateString()}

@@ -19,6 +19,7 @@ const AdminMenu = lazy(() => import("./pages/AdminMenu"));
 const MemberList = lazy(() => import("./pages/MemberList"));
 const PaymentAmounts = lazy(() => import("./pages/PaymentAmounts"));
 const MakeCollectionMember = lazy(() => import("./pages/MakeCollectionMember"));
+const CSVImportPage = lazy(() => import("./pages/CSVImportPage"));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -50,6 +51,7 @@ const App = () => (
                 <Route path="/admin/members" element={<MemberList />} />
                 <Route path="/admin/payment-amounts" element={<PaymentAmounts />} />
                 <Route path="/admin/collection-members" element={<MakeCollectionMember />} />
+                <Route path="/admin/csv-import" element={<CSVImportPage />} />
               </Route>
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

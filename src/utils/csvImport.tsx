@@ -62,13 +62,11 @@ const parseDateString = (dateString: string): { date: Date; month: number; year:
 };
 
 const getDateDigits = (dateString:string ) : string =>{
-  const parts = dateString.split('-');
-  if(parts.length >= 3){
-    const day = parts[0];
-    const year = parts[2];
-    return `${day}${year}`;
-  }
-  return '';
+  const { date } = parseDateString(dateString);
+   const day = date.getDate().toString().padStart(2,'0');
+   const month = (date.getMonth() + 1).toString().padStart(2,'0');
+   const year = date.getFullYear();
+   return `${day}${month}${year}`;
 };
 
 export const parseCSVData = (csvContent: string): PaymentRecord[] => {

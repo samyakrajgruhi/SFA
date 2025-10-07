@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, DollarSign, UserPlus, Shield } from 'lucide-react';
+import { Users, DollarSign, UserPlus, Shield, FileUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const AdminMenu = () => {
@@ -44,6 +44,13 @@ const AdminMenu = () => {
       icon: UserPlus,
       path: '/admin/collection-members',
       color: 'text-warning'
+    },
+    {
+      title: 'CSV Import',
+      description: 'Add Donation Data by importing .csv File',
+      icon: FileUp,
+      path:'/admin/csv-import',
+      color: 'text-primary'
     }
   ];
 
