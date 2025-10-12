@@ -61,14 +61,11 @@ const Payment = () => {
         const usersRef = collection(firestore, 'users');
         const q = query(usersRef, where('isCollectionMember','==',true));
         const querySnapshot = await getDocs(q);
-        
-        const q2 = query(usersRef, where('role','==','collection'));
-        const querySnapshot2 = await getDocs(q2);
 
-        const memberMap = new Map();
+        const members: CollectionMember[] = [];
         querySnapshot.forEach(doc => {
           const data = doc.data();
-          memberMap.set(doc.id, {
+          members.push({
             id: doc.id,
             name: data.full_name || 'Unknown',
             lobby: data.lobby_id || 'Unknown',
@@ -76,18 +73,6 @@ const Payment = () => {
           });
         });
 
-        querySnapshot2.forEach(doc => {
-          const data = doc.data();
-          if(!memberMap.has(doc.id)){
-            memberMap.set(doc.id, {
-              id: doc.id,
-              name: data.full_name || 'Unknown',
-              lobby: data.lobby_id || 'Unknown',
-              sfaId: data.sfa_id || '',
-            });
-          }
-        });
-        const members = Array.from(memberMap.values());
         setCollectionMembers(members);
       } catch (error) {
         console.error("Error fetching collection members:", error);

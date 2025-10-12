@@ -12,7 +12,7 @@ import MemberImport from '@/components/admin/MemberImport';
 const CSVImportPage = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.isAdmin;
 
   if (isLoading) {
     return (

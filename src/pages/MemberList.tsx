@@ -24,7 +24,6 @@ interface MemberData {
   cmsId: string;
   sfaId: string;
   lobby: string;
-  role: string;
   isProtected?: boolean;
   isAdmin?: boolean;
   isCollectionMember: boolean;
@@ -47,7 +46,7 @@ const MemberList = () => {
   const [processing, setProcessing] = useState<string | null>(null);
 
   // Check if user is admin
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.isAdmin;
 
   // Fetch members from firestore
   useEffect(() => {
@@ -70,11 +69,10 @@ const MemberList = () => {
             cmsId: data.cms_id || 'N/A',
             sfaId: data.sfa_id || 'N/A',
             lobby: data.lobby_id || 'N/A',
-            role: data.role || 'member',
             email: data.email || 'N/A',
             isProtected: isProtectedAdmin,
-            isAdmin: data.isAdmin || data.role == 'admin',
-            isCollectionMember: data.isCollectionMember || data.role == 'collection'
+            isAdmin: data.isAdmin || false,
+            isCollectionMember: data.isCollectionMember || false
           };
         });
         
@@ -145,8 +143,9 @@ const MemberList = () => {
       member.cmsId.toLowerCase().includes(searchLower);
     
     if (roleFilter === 'all') return matchesSearch;
-    if (roleFilter === 'admin') return matchesSearch && member.role === 'admin';
-    if (roleFilter === 'member') return matchesSearch && member.role === 'member';
+    if (roleFilter === 'admin') return matchesSearch && member.isAdmin;
+    if (roleFilter === 'collection') return matchesSearch && member.isCollectionMember;
+    if (roleFilter === 'member') return matchesSearch && !member.isAdmin && !member.isCollectionMember;
     
     return matchesSearch;
   });
@@ -205,6 +204,7 @@ const MemberList = () => {
                   <SelectItem value="all">All Members</SelectItem>
                   <SelectItem value="admin">Admins</SelectItem>
                   <SelectItem value="member">Regular Members</SelectItem>
+                  <SelectItem value="collection">Collection Members</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -235,7 +235,7 @@ const MemberList = () => {
                         <TableHead className="font-semibold">SFA ID</TableHead>
                         <TableHead className="font-semibold">CMS ID</TableHead>
                         <TableHead className="font-semibold">Lobby</TableHead>
-                        <TableHead className="font-semibold">Role</TableHead>
+                        <TableHead className="font-semibold">Roles</TableHead>
                         <TableHead className="font-semibold">Actions</TableHead>
                       </TableRow>
                     </TableHeader>

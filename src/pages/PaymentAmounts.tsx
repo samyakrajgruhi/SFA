@@ -17,7 +17,7 @@ const PaymentAmounts = () => {
   const [amounts, setAmounts] = useState<number[]>([25, 60, 500]);
   const [newAmount, setNewAmount] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.isAdmin;
 
   useEffect(() => {
     const fetchAmounts = async () => {

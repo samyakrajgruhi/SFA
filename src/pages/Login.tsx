@@ -109,7 +109,8 @@ const Login = () => {
           sfa_id:sfaId,
           lobby_id:lobbyId,
           email:regEmail,
-          role:'member',
+          isAdmin: false,
+          isCollectionMember: false,
           phone_number: phoneNo,
           emergency_number: emergencyNo,
           uid:user.uid          

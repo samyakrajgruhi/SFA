@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const AdminMenu = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.isAdmin;
 
   if (isLoading) {
     return (

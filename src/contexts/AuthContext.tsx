@@ -16,7 +16,6 @@ interface FirestoreUserData {
   email?:string;
   uid?:string;
   phone_number?: string;
-  role?: string;
   isAdmin?: boolean;
   isCollectionMember?: boolean;
   emergency_number?: string;
@@ -45,7 +44,6 @@ interface UserData {
   cmsId?: string;
   lobby?: string;
   phoneNumber?: string;
-  role?: string;
   isAdmin?: boolean;
   isCollectionMember?: boolean
   emergencyNumber?: string;
@@ -83,9 +81,8 @@ useEffect(() => {
           name: userData.full_name,
           cmsId: userData.cms_id,
           lobby: userData.lobby_id,
-          role: userData.role || 'member', 
-          isAdmin: userData.isAdmin || userData.role == 'admin',
-          isCollectionMember: userData.isCollectionMember || userData.role === 'collection',
+          isAdmin: userData.isAdmin || false,
+          isCollectionMember: userData.isCollectionMember || false,
           sfaId: userData.sfaId || `SFA${userData.cms_id?.substring(3)}`, // Generate from CMS ID if not available
           phoneNumber: userData.phone_number || '+91 98765 43210',
           emergencyNumber: userData.emergency_number || '+91 98765 43211'

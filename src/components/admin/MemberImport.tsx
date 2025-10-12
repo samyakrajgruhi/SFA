@@ -133,7 +133,8 @@ const MemberImport: React.FC = () => {
             full_name: member.full_name,
             lobby_id: member.lobby_id,
             phone_number: member.phone_number,
-            role: member.role || 'member',
+            isAdmin: member.role === 'admin',
+            isCollectionMember: member.role === 'collection',
             sfa_id: member.sfa_id,
             createdAt: new Date()
           });
