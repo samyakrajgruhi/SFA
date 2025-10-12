@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, DollarSign, UserPlus, Shield, FileUp } from 'lucide-react';
+import { Users, DollarSign, UserPlus, Shield, FileUp, Building } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const AdminMenu = () => {
@@ -37,6 +37,13 @@ const AdminMenu = () => {
       icon: DollarSign,
       path: '/admin/payment-amounts',
       color: 'text-accent'
+    },
+    {
+      title: 'Lobby Management',
+      description: 'Manage lobby codes and locations',
+      icon: Building,
+      path: '/admin/lobbies',
+      color: 'text-success'
     },
     {
       title: 'Collection Members',

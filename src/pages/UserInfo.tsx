@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {doc,updateDoc, collection ,query, where, getDocs} from 'firebase/firestore';
 import {firestore} from '@/firebase';
 import {useToast} from '@/hooks/use-toast';
+import {useLobbies} from '@/hooks/useLobbies';
 
 const UserInfo = () => {
   const { user} = useAuth();
@@ -55,7 +56,7 @@ const UserInfo = () => {
     }
   }, [user]);
 
-  const lobbies = ['ANVT', 'DEE', 'DLI', 'GHH', 'JIND', 'KRJNDD', 'MTC', 'NZM', 'PNP', 'ROK', 'SSB'];
+  const {lobbies, isLoading: isLoadingLobbies } = useLobbies();
   const roles = ['Admin', 'Collection Member', 'Member'];
 
   const handleEdit = () => {
@@ -271,9 +272,13 @@ const UserInfo = () => {
                 <div>
                   <Label htmlFor="lobby" className="text-text-secondary">Lobby</Label>
                   {isEditing ? (
-                    <Select value={editedInfo.lobby} onValueChange={(value) => handleInputChange('lobby', value)}>
+                    <Select 
+                      value={editedInfo.lobby} 
+                      onValueChange={(value) => handleInputChange('lobby', value)}
+                      disabled={isLoadingLobbies}
+                    >
                       <SelectTrigger className="mt-1 bg-surface border border-border">
-                        <SelectValue />
+                        <SelectValue placeholder={isLoadingLobbies ? "Loading lobbies..." : "Select lobby"} />
                       </SelectTrigger>
                       <SelectContent className="bg-surface border border-border z-50">
                         {lobbies.map((lobby) => (

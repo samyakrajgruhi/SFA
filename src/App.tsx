@@ -20,7 +20,8 @@ const MemberList = lazy(() => import("./pages/MemberList"));
 const PaymentAmounts = lazy(() => import("./pages/PaymentAmounts"));
 const MakeCollectionMember = lazy(() => import("./pages/MakeCollectionMember"));
 const CSVImportPage = lazy(() => import("./pages/CSVImportPage"));
-const DatabaseCleanup = lazy(() => import("./pages/TempAdmin"))
+const DatabaseCleanup = lazy(() => import("./pages/TempAdmin"));
+const LobbiesManagement = lazy(() => import("./pages/LobbiesManagement"));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -51,6 +52,7 @@ const App = () => (
                 <Route path="/admin" element={<AdminMenu />} />
                 <Route path="/admin/members" element={<MemberList />} />
                 <Route path="/admin/payment-amounts" element={<PaymentAmounts />} />
+                <Route path="/admin/lobbies" element={<LobbiesManagement />} />
                 <Route path="/admin/collection-members" element={<MakeCollectionMember />} />
                 <Route path="/admin/csv-import" element={<CSVImportPage />} />
                 <Route path="/admin/cleanup" element={<DatabaseCleanup />} />

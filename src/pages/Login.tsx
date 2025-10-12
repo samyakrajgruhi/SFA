@@ -1,4 +1,5 @@
 import { useState } from "react";
+import {useLobbies} from '@/hooks/useLobbies';
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,11 +15,13 @@ import {
 } from "firebase/auth";
 import { setDoc,doc,getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 
 const Login = () => {
   const {toast} = useToast();
+  const { lobbies, isLoading: isLoadingLobbies } = useLobbies();
 
   const [isLogin, setIsLogin] = useState(true);
   const navigate = useNavigate();
@@ -320,18 +323,22 @@ const Login = () => {
               </div>
 
               {/* Lobby ID Field */}
-              <div>
+               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="lobbyId">
-                  Lobby ID
+                  Lobby ID <span className="text-red-600">*</span>
                 </label>
-                <Input
-                  id="lobbyId"
-                  type="text"
-                  placeholder="Enter your lobby ID"
-                  className="h-11"
-                  value={lobbyId}
-                  onChange={e => setLobbyId(e.target.value.toUpperCase())}
-                />
+                <Select value={lobbyId} onValueChange={setLobbyId} disabled={isLoadingLobbies}>
+                  <SelectTrigger className="w-full h-11">
+                    <SelectValue placeholder={isLoadingLobbies ? "Loading lobbies..." : "Select your lobby"} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-surface border border-border z-50">
+                    {lobbies.map((lobby) => (
+                      <SelectItem key={lobby} value={lobby} className="hover:bg-surface-hover">
+                        {lobby}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* CMS ID Field */}

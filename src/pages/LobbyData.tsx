@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import {useLobbies} from '@/hooks/useLobbies';
 import Navbar from '../components/Navbar';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -23,7 +24,8 @@ const LobbyData = () => {
   const [lobbyData, setLobbyData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const lobbies = ['All Lobbies', 'ANVT', 'DEE', 'DLI', 'GHH', 'JIND', 'KRJNDD', 'MTC', 'NZM', 'PNP', 'ROK', 'SSB'];
+  const {lobbies: systemLobbies, isLoading: isLoadingLobbies } = useLobbies();
+  const lobbies = ['All Lobbies', ...systemLobbies];
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
@@ -131,9 +133,9 @@ const LobbyData = () => {
                     <label className="text-lg font-semibold text-text-primary whitespace-nowrap">
                       Select Lobby:
                     </label>
-                    <Select value={selectedLobby} onValueChange={setSelectedLobby}>
+                    <Select value={selectedLobby} onValueChange={setSelectedLobby} disabled={isLoadingLobbies}>
                       <SelectTrigger className="w-full sm:w-48">
-                        <SelectValue placeholder="Choose a lobby" />
+                        <SelectValue placeholder={isLoadingLobbies ? "Loading lobbies..." : "Choose a lobby"} />
                       </SelectTrigger>
                       <SelectContent className="bg-surface border border-border z-50">
                         {lobbies.map((lobby) => (
