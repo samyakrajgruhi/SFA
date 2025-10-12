@@ -22,6 +22,7 @@ const MakeCollectionMember = lazy(() => import("./pages/MakeCollectionMember"));
 const CSVImportPage = lazy(() => import("./pages/CSVImportPage"));
 const DatabaseCleanup = lazy(() => import("./pages/TempAdmin"));
 const LobbiesManagement = lazy(() => import("./pages/LobbiesManagement"));
+const DeleteUser = lazy(() => import("./pages/DeleteUser"));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -56,6 +57,7 @@ const App = () => (
                 <Route path="/admin/collection-members" element={<MakeCollectionMember />} />
                 <Route path="/admin/csv-import" element={<CSVImportPage />} />
                 <Route path="/admin/cleanup" element={<DatabaseCleanup />} />
+                <Route path="/admin/delete-user" element={<DeleteUser />} />
               </Route>
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

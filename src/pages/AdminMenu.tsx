@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, DollarSign, UserPlus, Shield, FileUp, Building } from 'lucide-react';
+import { Users, DollarSign, UserPlus, Shield, FileUp, Building, UserX } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const AdminMenu = () => {
@@ -58,6 +58,13 @@ const AdminMenu = () => {
       icon: FileUp,
       path:'/admin/csv-import',
       color: 'text-primary'
+    },
+    {
+      title: 'Delete User',
+      description: 'Remove user accounts from the system (preserves transaction data)',
+      icon: UserX,
+      path: '/admin/delete-user',
+      color: 'text-destructive'
     }
   ];
 
