@@ -23,6 +23,8 @@ const CSVImportPage = lazy(() => import("./pages/CSVImportPage"));
 const DatabaseCleanup = lazy(() => import("./pages/TempAdmin"));
 const LobbiesManagement = lazy(() => import("./pages/LobbiesManagement"));
 const DeleteUser = lazy(() => import("./pages/DeleteUser"));
+const BeneficiaryRequest = lazy(() => import("./pages/BeneficiaryRequest"));
+const BeneficiaryReview = lazy(() => import("./pages/BeneficiaryReview"));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -50,6 +52,7 @@ const App = () => (
               <Route element={<ProtectedRoute />}>
                 <Route path="/user-info" element={<UserInfo />} />
                 <Route path="/payment" element={<Payment />} />
+                <Route path="/beneficiary-request" element={<BeneficiaryRequest />} />
                 <Route path="/admin" element={<AdminMenu />} />
                 <Route path="/admin/members" element={<MemberList />} />
                 <Route path="/admin/payment-amounts" element={<PaymentAmounts />} />
@@ -58,6 +61,7 @@ const App = () => (
                 <Route path="/admin/csv-import" element={<CSVImportPage />} />
                 <Route path="/admin/cleanup" element={<DatabaseCleanup />} />
                 <Route path="/admin/delete-user" element={<DeleteUser />} />
+                <Route path="/admin/beneficiary-review" element={<BeneficiaryReview />} />
               </Route>
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

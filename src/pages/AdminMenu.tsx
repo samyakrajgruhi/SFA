@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, DollarSign, UserPlus, Shield, FileUp, Building, UserX } from 'lucide-react';
+import { Users, DollarSign, UserPlus, Shield, FileUp, Building, UserX, Heart } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const AdminMenu = () => {
@@ -65,6 +65,13 @@ const AdminMenu = () => {
       icon: UserX,
       path: '/admin/delete-user',
       color: 'text-destructive'
+    },
+    {
+      title: 'Beneficiary Review',
+      description: 'Review and approve member benefit requests',
+      icon: Heart,
+      path: '/admin/beneficiary-review',
+      color: 'text-accent'
     }
   ];
 

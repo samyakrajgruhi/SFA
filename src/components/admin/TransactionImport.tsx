@@ -121,16 +121,17 @@ const TransactionImport: React.FC = () => {
           const parsedData = parseCSV(csvContent);
           
           // Normalize the data for consistent field names
-          const normalizedData = parsedData.map(record => {
+          const normalizedData = parsedData.map((record, index) => {
+            const amountStr = record.amount?.toString().replace(/[₹,]/g, '') || '0';
             return {
-              srno: record.srno || '',
+              srNo: parseInt(record.srno) || index + 1,
               payDate: record.paydate || '',
               lobby: record.lobby || '',
               sfaId: record['SFA-id'] || record.sfaId || '',
               name: record.Name || record.name || '',
               cmsId: record['CMS-id'] || record.cmsId || '',
               receiver: record.reciever || record.receiver || '',
-              amount: record.amount?.replace('₹', '') || '0',
+              amount: parseFloat(amountStr),
               paymentMode: record.payment_mode || record.paymentMode || '',
               remarks: record.remarks || ''
             };

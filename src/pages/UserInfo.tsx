@@ -23,7 +23,7 @@ const UserInfo = () => {
     sfaId: user?.sfaId || 'SFA000',
     cmsId: user?.cmsId || 'CMS00000',
     lobby: user?.lobby || 'ANVT',
-    role: user?.role || 'Member',
+    role: user?.isAdmin ? 'Admin' : (user?.isCollectionMember ? 'Collection Member' : 'Member'),
     phoneNumber: user?.phoneNumber || '+91 98765 43210',
     email: user?.email || 'user@example.com',
     emergencyNumber: user?.emergencyNumber || '+91 98765 43211'
@@ -33,12 +33,13 @@ const UserInfo = () => {
 
   useEffect(() => {
     if (user) {
+      const userRole = user.isAdmin ? 'Admin' : (user.isCollectionMember ? 'Collection Member' : 'Member');
       setUserInfo({
         name: user.name || 'User Name',
         sfaId: user.sfaId || 'SFA000',
         cmsId: user.cmsId || 'CMS00000',
         lobby: user.lobby || 'ANVT',
-        role: user.role || 'Member',
+        role: userRole,
         phoneNumber: user.phoneNumber || '+91 98765 43210',
         email: user.email || 'user@example.com',
         emergencyNumber: user.emergencyNumber || '+91 98765 43211'
@@ -48,7 +49,7 @@ const UserInfo = () => {
         sfaId: user.sfaId || 'SFA000',
         cmsId: user.cmsId || 'CMS00000',
         lobby: user.lobby || 'ANVT',
-        role: user.role || 'Member',
+        role: userRole,
         phoneNumber: user.phoneNumber || '+91 98765 43210',
         email: user.email || 'user@example.com',
         emergencyNumber: user.emergencyNumber || '+91 98765 43211'
