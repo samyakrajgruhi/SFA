@@ -68,12 +68,6 @@ const Navbar = () => {
                     >
                       Admin Panel
                     </Link>
-                    <Link 
-                      to="/announcements" 
-                      className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium"
-                    >
-                      Announcements
-                    </Link>
                   </>
                 )}
                 <Link to="/payment" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">

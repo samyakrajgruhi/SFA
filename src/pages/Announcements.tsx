@@ -1,5 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import {firestore} from '@/firebase';
+import {
+  collection,
+  addDoc,
+  deleteDoc,
+  doc,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp,
+  onSnapshot
+} from 'firebase/firestore';
 import { Navigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -29,42 +41,72 @@ interface Announcement {
   createdBy: string;
 }
 
-// Mock data - replace with actual data from backend
-const mockAnnouncements: Announcement[] = [
-  {
-    id: '1',
-    title: 'System Maintenance',
-    message: 'Scheduled maintenance on Sunday, 2:00 AM - 4:00 AM. During this time, the system may be temporarily unavailable.',
-    createdAt: '2025-01-15T10:30:00',
-    createdBy: 'Admin',
-  },
-  {
-    id: '2',
-    title: 'New Feature Released',
-    message: 'Check out our new beneficiary request system! Members can now submit benefit requests online.',
-    createdAt: '2025-01-14T15:20:00',
-    createdBy: 'Admin',
-  },
-  {
-    id: '3',
-    title: 'Payment Processing Update',
-    message: 'Payment processing times have been improved. Payments will now be processed within 24 hours.',
-    createdAt: '2025-01-13T09:15:00',
-    createdBy: 'Admin',
-  },
-];
+
 
 const Announcements = () => {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [announcements, setAnnouncements] = useState<Announcement[]>(mockAnnouncements);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     message: '',
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting,setIsSubmitting] = useState(false);
 
-  if (isLoading) {
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        const announcementsRef = collection(firestore,'announcements');
+        const q = query(announcementsRef, orderBy('createdAt', 'desc'));
+
+        const unsubscribe = onSnapshot(q,(snapshot) => {
+          const announcementsList: Announcement[] = [];
+          snapshot.forEach((doc)=> {
+            const data = doc.data();
+            announcementsList.push({
+              id: doc.id,
+              title: data.title,
+              message: data.message,
+              createdAt: (() => {
+                try {
+                  return data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString();
+                } catch (error) {
+                  console.error('Invalid date format:', error);
+                  return new Date().toISOString();
+                }
+              })(),
+              createdBy: data.createdByName || 'Admin'
+            });
+          });
+          setAnnouncements(announcementsList);
+          setIsLoading(false);
+        });
+        return unsubscribe;
+      }catch(error){
+        console.error('Error fetching announcements:',error);
+        setIsLoading(false);
+        return null;
+      }
+    };
+    // Call the async function and handle the returned unsubscribe
+    let unsubscribeFunction: (() => void) | null = null;
+    
+    fetchAnnouncements().then((unsubscribe) => {
+      unsubscribeFunction = unsubscribe;
+    });
+
+    // Cleanup function
+    return () => {
+      if (unsubscribeFunction) {
+        unsubscribeFunction();
+      }
+    };
+
+  },[]);
+
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin h-12 w-12 rounded-full border-4 border-primary border-t-transparent"></div>
@@ -76,9 +118,9 @@ const Announcements = () => {
     return <Navigate to="/login" replace />;
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    const announcementsRef = collection(firestore,'announcements');
     if (!formData.title.trim() || !formData.message.trim()) {
       toast({
         title: "Error",
@@ -88,31 +130,62 @@ const Announcements = () => {
       return;
     }
 
-    const newAnnouncement: Announcement = {
-      id: Date.now().toString(),
-      title: formData.title,
-      message: formData.message,
-      createdAt: new Date().toISOString(),
-      createdBy: user?.name || 'Admin',
-    };
+    setIsSubmitting(true);
 
-    setAnnouncements([newAnnouncement, ...announcements]);
-    setFormData({ title: '', message: '' });
-    setShowForm(false);
+    try {
+      await addDoc(announcementsRef, {
+        title: formData.title.trim(),
+        message: formData.message.trim(),
+        createdAt: serverTimestamp(),
+        createdBy: user?.uid,
+        createdByName: user?.name || 'Admin',
+        isActive: true
+      });
 
-    toast({
-      title: "Success",
-      description: "Announcement created successfully",
-    });
+      setFormData({title: '',message: ''});
+      setShowForm(false);
+
+      toast({
+        title: "Success",
+        description: "Announcement created successfully"
+      });
+    }catch(error){
+      console.error('Error creating announcement:',error);
+      toast({
+        title:'Error',
+        description: "Failed to create announcement. Please try again.",
+        variant: "destructive",
+      });
+    }finally{
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setAnnouncements(announcements.filter(a => a.id !== id));
-    toast({
-      title: "Success",
-      description: "Announcement deleted successfully",
-    });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteDoc(doc(firestore, 'announcements', id));
+      
+      toast({
+        title: "Success",
+        description: "Announcement deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting announcement:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete announcement. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
+
+   if (isLoading || isSubmitting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin h-12 w-12 rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
@@ -195,11 +268,19 @@ const Announcements = () => {
                       setShowForm(false);
                       setFormData({ title: '', message: '' });
                     }}
+                    disabled={isSubmitting}
                   >
                     Cancel
                   </Button>
-                  <Button type="submit">
-                    Create Announcement
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <span className="animate-spin h-4 w-4 mr-2 rounded-full border-2 border-white border-t-transparent"></span>
+                        Creating...
+                      </>
+                    ) : (
+                      'Create Announcement'
+                    )}
                   </Button>
                 </div>
               </form>

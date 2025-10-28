@@ -36,6 +36,6 @@ const app = initializeApp(firebaseConfig);
 export const firestore = getFirestore(app);
 export const auth = getAuth(app);
 
-if(import.meta.env.VITE_DEV_MODE === 'true') {
+if(import.meta.env.DEV) {
   console.log("Firebase initialized with project: ",import.meta.env.VITE_FIREBASE_PROJECT_ID);
 }

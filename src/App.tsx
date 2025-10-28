@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from "react";
+import React, { lazy, Suspense, Component, ErrorInfo, ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -34,45 +34,76 @@ const LoadingFallback = () => (
   </div>
 );
 
+class ErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false};
+
+  static getDerivedStateFromError() {
+    return { hasError: true};
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("Error caught by boundary:",error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
+            <button onClick={() => window.location.reload()}>Reload Page</button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Suspense fallback={<LoadingFallback />}>
-            <Routes>
-              <Route path="/" element={<Homepage />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/lobby-data" element={<LobbyData />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/announcements" element={<Announcements />} />
-              <Route element={<ProtectedRoute />}>
-                <Route path="/user-info" element={<UserInfo />} />
-                <Route path="/payment" element={<Payment />} />
-                <Route path="/beneficiary-request" element={<BeneficiaryRequest />} />
-                <Route path="/admin" element={<AdminMenu />} />
-                <Route path="/admin/members" element={<MemberList />} />
-                <Route path="/admin/payment-amounts" element={<PaymentAmounts />} />
-                <Route path="/admin/lobbies" element={<LobbiesManagement />} />
-                <Route path="/admin/collection-members" element={<MakeCollectionMember />} />
-                <Route path="/admin/csv-import" element={<CSVImportPage />} />
-                <Route path="/admin/cleanup" element={<DatabaseCleanup />} />
-                <Route path="/admin/delete-user" element={<DeleteUser />} />
-                <Route path="/admin/beneficiary-review" element={<BeneficiaryReview />} />
-              </Route>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
+                <Route path="/" element={<Homepage />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/lobby-data" element={<LobbyData />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/announcements" element={<Announcements />} />
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/user-info" element={<UserInfo />} />
+                  <Route path="/payment" element={<Payment />} />
+                  <Route path="/beneficiary-request" element={<BeneficiaryRequest />} />
+                  <Route path="/admin" element={<AdminMenu />} />
+                  <Route path="/admin/members" element={<MemberList />} />
+                  <Route path="/admin/payment-amounts" element={<PaymentAmounts />} />
+                  <Route path="/admin/lobbies" element={<LobbiesManagement />} />
+                  <Route path="/admin/collection-members" element={<MakeCollectionMember />} />
+                  <Route path="/admin/csv-import" element={<CSVImportPage />} />
+                  <Route path="/admin/cleanup" element={<DatabaseCleanup />} />
+                  <Route path="/admin/delete-user" element={<DeleteUser />} />
+                  <Route path="/admin/beneficiary-review" element={<BeneficiaryReview />} />
+                </Route>
 
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
