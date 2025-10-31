@@ -13,13 +13,13 @@ interface FirestoreUserData {
   full_name?: string;
   cms_id?: string;
   lobby_id?: string;
-  email?:string;
-  uid?:string;
+  email?: string;
+  uid?: string;
   phone_number?: string;
   isAdmin?: boolean;
   isCollectionMember?: boolean;
   emergency_number?: string;
-  sfaId?: string;
+  sfa_id?: string;  // ✅ Changed from sfaId to sfa_id
 }
 
 const getUserData = async (userId: string): Promise<FirestoreUserData> => {
@@ -45,7 +45,7 @@ interface UserData {
   lobby?: string;
   phoneNumber?: string;
   isAdmin?: boolean;
-  isCollectionMember?: boolean
+  isCollectionMember?: boolean;
   emergencyNumber?: string;
   sfaId?: string;
 }
@@ -68,36 +68,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // In your AuthContext.tsx
-useEffect(() => {
-  setIsLoading(true);
-  const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-    if (firebaseUser) {
-      try {
-        const userData = await getUserData(firebaseUser.uid);
-        setUser({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          name: userData.full_name,
-          cmsId: userData.cms_id,
-          lobby: userData.lobby_id,
-          isAdmin: userData.isAdmin || false,
-          isCollectionMember: userData.isCollectionMember || false,
-          sfaId: userData.sfaId || `SFA${userData.cms_id?.substring(3)}`, // Generate from CMS ID if not available
-          phoneNumber: userData.phone_number || '+91 98765 43210',
-          emergencyNumber: userData.emergency_number || '+91 98765 43211'
-        });
-      } catch (error) {
-        console.error("Error fetching user data:", error);
+  useEffect(() => {
+    setIsLoading(true);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const userData = await getUserData(firebaseUser.uid);
+          
+          console.log('Fetched user data:', userData); // Debug log
+          
+          setUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            name: userData.full_name || 'User Name',
+            cmsId: userData.cms_id || 'CMS00000',
+            lobby: userData.lobby_id || 'ANVT',
+            isAdmin: userData.isAdmin || false,
+            isCollectionMember: userData.isCollectionMember || false,
+            sfaId: userData.sfa_id || 'SFA000',  // ✅ Changed from userData.sfaId to userData.sfa_id
+            phoneNumber: userData.phone_number || '+91 98765 43210',
+            emergencyNumber: userData.emergency_number || '+91 98765 43211'
+          });
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+        }
+      } else {
+        setUser(null);
       }
-    } else {
-      setUser(null);
-    }
-    setIsLoading(false);
-  });
+      setIsLoading(false);
+    });
 
-  return () => unsubscribe();
-}, []);
+    return () => unsubscribe();
+  }, []);
 
   const logout = async () => {
     try {

@@ -65,13 +65,6 @@ const AdminMenu = () => {
       icon: UserX,
       path: '/admin/delete-user',
       color: 'text-destructive'
-    },
-    {
-      title: 'Beneficiary Review',
-      description: 'Review and approve member benefit requests',
-      icon: Heart,
-      path: '/admin/beneficiary-review',
-      color: 'text-accent'
     }
   ];
 

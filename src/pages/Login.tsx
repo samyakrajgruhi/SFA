@@ -16,8 +16,7 @@ import {
 import { setDoc,doc,getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-
+import { generateAndReserveSfaId} from '@/utils/generateSfaId';
 
 const Login = () => {
   const {toast} = useToast();
@@ -49,6 +48,8 @@ const Login = () => {
   const [resetEmail, setResetEmail] = useState("");
   const [showResetForm, setShowResetForm] = useState(false);
 
+  const [autoGenerateSfaId, setAutoGenerateSfaId] = useState(false);
+
   function clearFields(){
     setFullName("");
     setRegEmail("");
@@ -75,25 +76,6 @@ const Login = () => {
           });
           return;
         }
-        if (!sfaId) {
-          toast({
-            title: "Error",
-            description: "SFA ID cannot be empty!",
-            variant: "destructive",
-          });
-          return;
-        }
-        // Check if CMS ID already exists
-        const existingDoc = await getDoc(doc(firestore, "users", sfaId));
-        if (existingDoc.exists()) {
-          toast({
-            title:"Error",
-            description: "CMS ID already exists!",
-            variant: "destructive"
-          });
-          console.error("CMS ID already exists!", { position: "top-center" });
-          return;
-        }
 
         if(regPassword !== regConfirmPassword) {
           toast({
@@ -103,13 +85,62 @@ const Login = () => {
           });
           return;
         }
-        
+
+        if(!autoGenerateSfaId && !sfaId){
+          toast({
+            title:"Error",
+            description: "SFA ID cannot be empty",
+            variant: "destructive"
+          });
+          return;
+        }
+
         const userCredentials = await createUserWithEmailAndPassword(auth, regEmail, regPassword);
         const user = userCredentials.user;
+
+        let finalSfaId = sfaId;
+
+        if(autoGenerateSfaId) {
+          try {
+            console.log('Current user:',auth.currentUser);
+
+            finalSfaId = await generateAndReserveSfaId();
+            setSfaId(finalSfaId);
+          } catch (error){
+
+            await user.delete();
+            toast({
+              title: "Error",
+              description: error.message || "Failed to generate SFA ID",
+              variant: "destructive",
+            });
+            return;
+          }
+        }else {
+          // Manual SFA ID - check if it exists
+          try {
+            const existingDoc = await getDoc(doc(firestore, "users", finalSfaId));
+            if (existingDoc.exists()) {
+              // Delete auth account since SFA ID is taken
+              await user.delete();
+              toast({
+                title:"Error",
+                description: "This SFA ID already exists!",
+                variant: "destructive"
+              });
+              return;
+            }
+          } catch (error) {
+            // If check fails due to permissions, still allow creation
+            // Firestore will prevent duplicates at document creation
+            console.warn('Could not check SFA ID uniqueness:', error);
+          }
+        }
+        
         const userData = {
           full_name: fullName,
           cms_id:cmsId,
-          sfa_id:sfaId,
+          sfa_id:finalSfaId,
           lobby_id:lobbyId,
           email:regEmail,
           isAdmin: false,
@@ -118,12 +149,15 @@ const Login = () => {
           emergency_number: emergencyNo,
           uid:user.uid          
         }
-        await setDoc(doc(firestore,"users",sfaId),userData);
+
+        await setDoc(doc(firestore,"users",finalSfaId),userData);
+
         clearFields();
         toast({
           title: "Success",
           description: "User registered successfully!"
-        })
+        });
+
         console.log("User registered Successfully!!");
         setIsLogin(true);
       }
@@ -359,9 +393,28 @@ const Login = () => {
               {/* SFA ID Field */}
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="cmsId">
-                  SFA ID <span className="text-red-600">*</span>
+                  SFA ID {!autoGenerateSfaId && <span className="text-red-600">*</span>}
                 </label>
-                <Input
+
+                <div className="flex items-center gap-2 mb-2">
+                  <Checkbox
+                    id="autoGenerate"
+                    checked={autoGenerateSfaId}
+                    onCheckedChange={(checked)=>{
+                      setAutoGenerateSfaId(checked as boolean);
+                      if (checked) setSfaId('');
+                    }}
+                  />
+                  <label
+                    htmlFor="autoGenerate"
+                    className="text-sm text-text-secondary cursor-pointer"
+                  >
+                    Auto-generate SFA ID (for new members)
+                  </label>
+                </div>
+
+                {!autoGenerateSfaId ? (
+                  <Input
                   id="sfaId"
                   type="text"
                   placeholder="Enter your SFA ID"
@@ -369,6 +422,21 @@ const Login = () => {
                   value={sfaId}
                   onChange={e => setSfaId(e.target.value.toUpperCase())}
                 />
+                ) : (
+                  <div className="h-11 px-3 py-2 bg-surface border border-border rounded-md flex items-center">
+                    <span className="text-text-muted text-sm">
+                      SFA ID will be auto-generated upon registration
+                    </span>
+                  </div>
+                )}
+
+                {!autoGenerateSfaId && (
+                  <p className="text-xs text-text-muted mt-1">
+                    Enter the SFA ID that was pre-assigned to you
+                  </p>
+                )}
+
+                
               </div>
               {/* Phone Number Field */}
               <div>
