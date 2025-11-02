@@ -5,8 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Users, DollarSign, UserPlus, Shield, FileUp, Building, UserX, Heart } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { requireAdmin } from '@/hooks/useAdminCheck';
 
 const AdminMenu = () => {
+  const handleAdminAction = async () => {
+    if(!requireAdmin(user,toast)) return;
+  }
+  
   const { user, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const isAdmin = user?.isAdmin;

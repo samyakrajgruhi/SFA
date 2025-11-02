@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {requireAdmin} from '@/hooks/useAdminCheck';
 
 interface BeneficiaryRequest {
   id: string;
@@ -34,6 +35,10 @@ interface BeneficiaryRequest {
 }
 
 const BeneficiaryReview = () => {
+  const handleAdminAction = async () => {
+    if(!requireAdmin(user,toast)) return;
+  }
+  
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const [selectedRequest, setSelectedRequest] = useState<BeneficiaryRequest | null>(null);

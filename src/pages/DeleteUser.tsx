@@ -19,6 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {requireAdmin} from '@/hooks/useAdminCheck';
 
 interface UserInfo {
   id: string;
@@ -33,6 +34,11 @@ interface UserInfo {
 }
 
 const DeleteUser = () => {
+  const handleAdminAction = async () => {
+    if(!requireAdmin(user,toast)) return;
+  }
+
+  
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();

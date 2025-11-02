@@ -9,8 +9,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { firestore } from '@/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import {requireAdmin} from '@/hooks/useAdminCheck';
 
 const LobbiesManagement = () => {
+    const handleAdminAction = async () => {
+    if(!requireAdmin(user,toast)) return;
+  }
+  
     const { user, isAuthenticated, isLoading} = useAuth();
     const {toast} = useToast();
     const navigate = useNavigate();

@@ -8,8 +8,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TransactionImport from '@/components/admin/TransactionImport';
 import MemberImport from '@/components/admin/MemberImport';
+import {requireAdmin} from '@/hooks/useAdminCheck';
 
 const CSVImportPage = () => {
+  const handleAdminAction = async () => {
+    if(!requireAdmin(user,toast)) return;
+  }
+  
   const { user, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const isAdmin = user?.isAdmin;

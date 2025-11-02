@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { firestore } from '@/firebase';
 import { collection, getDocs, updateDoc, doc, query, where } from 'firebase/firestore';
+import {requireAdmin} from '@/hooks/useAdminCheck';
 
 interface MemberData {
   id: string;
@@ -36,6 +37,10 @@ const PROTECTED_ADMINS = [
 ];
 
 const MemberList = () => {
+  const handleAdminAction = async () => {
+    if(!requireAdmin(user,toast)) return;
+  }
+  
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
