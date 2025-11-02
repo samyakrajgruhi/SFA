@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/dialog';
 import { firestore } from '@/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 
 interface PaymentRecord {
   id: string;
@@ -39,17 +41,27 @@ interface PaymentRecord {
 }
 
 const MyPayments = () => {
-  const { user, isLoading } = useAuth();
-  const { toast } = useToast();
-  
-  // State variables you need:
-  const [payments, setPayments] = useState<PaymentRecord[]>([]);
-  const [isLoadingPayments, setIsLoadingPayments] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
-  const [showScreenshotDialog, setShowScreenshotDialog] = useState(false);
-  
-  // TODO: Implement these
+    const { user, isLoading } = useAuth();
+    const { toast } = useToast();
+    
+
+    const [payments, setPayments] = useState<PaymentRecord[]>([]);
+    const [isLoadingPayments, setIsLoadingPayments] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
+    const [showScreenshotDialog, setShowScreenshotDialog] = useState(false);
+    const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+
+    
+    const months = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    const currentDate = new Date();
+    const years = Array.from({ length: 5 }, (_, i) => currentDate.getFullYear() - i);
+
     useEffect(() => {
         const fetchMyPayments = async () => {
             if (!user?.isCollectionMember || !user?.sfaId) {
@@ -60,11 +72,15 @@ const MyPayments = () => {
             try {
             setIsLoadingPayments(true);
 
-            // 1. Fetch all transactions where you're the receiver
+            // 1. Fetch all transactions where of the receiver
             const transactionsRef = collection(firestore, 'transactions');
+            const constraints = [where('receiverSfaId','==',user.sfaId)];
+
+            constraints.push(where('month','==',selectedMonth));
+            constraints.push(where('year','==',selectedYear));
             const q = query(
                 transactionsRef,
-                where('receiverSfaId', '==', user.sfaId)
+                ...constraints
             );
             const querySnapshot = await getDocs(q);
 
@@ -148,7 +164,7 @@ const MyPayments = () => {
         };
 
   fetchMyPayments();
-}, [user, toast]);
+}, [user, toast,selectedMonth, selectedYear]);
 
     const handleViewScreenshot = (payment: PaymentRecord) => {
     // 1. Set the selected payment
@@ -194,12 +210,12 @@ const MyPayments = () => {
                 
                 {/* Header */}
                 <div className="text-center mb-8">
-                <h1 className="text-4xl font-bold text-text-primary mb-4">
-                    My Payments
-                </h1>
-                <p className="text-lg text-text-secondary">
-                    View all payments made to you
-                </p>
+                    <h1 className="text-4xl font-bold text-text-primary mb-4">
+                        My Payments
+                    </h1>
+                    <p className="text-lg text-text-secondary">
+                        Payments received in {months[selectedMonth]} {selectedYear}
+                    </p>
                 </div>
 
                 {/* Stats Card */}
@@ -232,34 +248,84 @@ const MyPayments = () => {
 
                 <Card>
                     <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between">
                         <div>
-                        <p className="text-sm text-text-secondary">This Month</p>
-                        <p className="text-3xl font-bold text-accent">
-                            {payments.filter(p => {
-                            const paymentDate = p.date?.toDate ? p.date.toDate() : new Date(0);
-                            const currentMonth = new Date().getMonth();
-                            const currentYear = new Date().getFullYear();
-                            return paymentDate.getMonth() === currentMonth && 
-                                    paymentDate.getFullYear() === currentYear;
-                            }).length}
-                        </p>
+                            <p className="text-sm text-text-secondary">Selected Period</p>
+                            <p className="text-3xl font-bold text-accent">
+                            {filteredPayments.length}
+                            </p>
                         </div>
-                    </div>
+                        </div>
                     </CardContent>
                 </Card>
                 </div>
 
-                {/* Search */}
+                {/* Filters: Month, Year, and Search */}
                 <Card className="p-6 mb-8">
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
-                    <Input
-                    className="pl-10 bg-surface"
-                    placeholder="Search by name, SFA ID, or CMS ID"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                    <div className="flex flex-col gap-4">
+                        {/* Month and Year Selectors */}
+                        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center w-full sm:w-auto">
+                            <label className="text-lg font-semibold text-text-primary whitespace-nowrap">
+                            Month:
+                            </label>
+                            <Select 
+                            value={selectedMonth.toString()} 
+                            onValueChange={(val) => setSelectedMonth(parseInt(val))}
+                            >
+                            <SelectTrigger className="w-full sm:w-40">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-surface border border-border z-50">
+                                {months.map((month, index) => (
+                                <SelectItem 
+                                    key={index} 
+                                    value={index.toString()} 
+                                    className="hover:bg-surface-hover"
+                                >
+                                    {month}
+                                </SelectItem>
+                                ))}
+                            </SelectContent>
+                            </Select>
+                        </div>
+                        
+                        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center w-full sm:w-auto">
+                            <label className="text-lg font-semibold text-text-primary whitespace-nowrap">
+                            Year:
+                            </label>
+                            <Select 
+                            value={selectedYear.toString()} 
+                            onValueChange={(val) => setSelectedYear(parseInt(val))}
+                            >
+                            <SelectTrigger className="w-full sm:w-32">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-surface border border-border z-50">
+                                {years.map((year) => (
+                                <SelectItem 
+                                    key={year} 
+                                    value={year.toString()} 
+                                    className="hover:bg-surface-hover"
+                                >
+                                    {year}
+                                </SelectItem>
+                                ))}
+                            </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    {/* Search */}
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
+                        <Input
+                            className="pl-10 bg-surface"
+                            placeholder="Search by name, SFA ID, or CMS ID"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
                 </div>
                 </Card>
 
