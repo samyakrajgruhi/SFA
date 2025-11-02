@@ -27,6 +27,7 @@ const BeneficiaryRequest = lazy(() => import("./pages/BeneficiaryRequest"));
 const BeneficiaryReview = lazy(() => import("./pages/BeneficiaryReview"));
 const Announcements = lazy(() => import("./pages/Announcements"));
 const TempAdmin  = lazy(() => import("./pages/TempAdmin"));
+const PaymentConfirmation = lazy(() => import("./pages/PaymentConfirmation"));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -84,6 +85,7 @@ const App = () => (
                 <Route element={<ProtectedRoute />}>
                   <Route path="/user-info" element={<UserInfo />} />
                   <Route path="/payment" element={<Payment />} />
+                  <Route path="/payment-confirm" element={<PaymentConfirmation />} />
                   <Route path="/beneficiary-request" element={<BeneficiaryRequest />} />
                   <Route path="/admin" element={<AdminMenu />} />
                   <Route path="/admin/members" element={<MemberList />} />

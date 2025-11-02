@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { firestore } from '@/firebase';
 import { collection, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import {useNavigate} from 'react-router-dom';
 
 // Interface for collection member data
 interface CollectionMember {
@@ -13,6 +14,8 @@ interface CollectionMember {
   name: string;
   lobby: string;
   sfaId: string;
+  cmsId: string;
+
 }
 
 const Payment = () => {
@@ -23,6 +26,8 @@ const Payment = () => {
   const [amounts, setAmounts] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingAmounts, setIsLoadingAmounts] = useState(true);
+
+  const navigate = useNavigate();
 
   useEffect(()=>{
     const fetchPaymentAmounts = async () =>{
@@ -69,7 +74,8 @@ const Payment = () => {
             id: doc.id,
             name: data.full_name || 'Unknown',
             lobby: data.lobby_id || 'Unknown',
-            sfaId: data.sfa_id || '',
+            sfaId: data.sfa_id || 'SFAXXXX',
+            cmsId: data.cms_id || 'CMSXXXX'
           });
         });
 
@@ -92,7 +98,16 @@ const Payment = () => {
   const handleProceedToPay = () => {
     if (selectedCollector && selectedAmount) {
       // Redirect to payment gateway
-      alert('Redirecting to payment gateway...');
+      navigate('/payment-confirm', {
+        state: {
+          amount: selectedAmount,
+          collectorId: selectedCollector,
+          collectorName: selectedMember?.name,
+          collectorSfaId: selectedMember?.sfaId,
+          collectorLobby: selectedMember?.lobby,
+          collectorCmsId: selectedMember?.cmsId
+        }
+      })
     }
   };
 
