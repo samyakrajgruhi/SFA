@@ -26,7 +26,6 @@ const DeleteUser = lazy(() => import("./pages/DeleteUser"));
 const BeneficiaryRequest = lazy(() => import("./pages/BeneficiaryRequest"));
 const BeneficiaryReview = lazy(() => import("./pages/BeneficiaryReview"));
 const Announcements = lazy(() => import("./pages/Announcements"));
-const TempAdmin  = lazy(() => import("./pages/TempAdmin"));
 const PaymentConfirmation = lazy(() => import("./pages/PaymentConfirmation"));
 const MyPayments = lazy(() => import("./pages/MyPayments"))
 const DeleteTransaction = lazy(() => import("./pages/DeleteTransaction"));
@@ -99,7 +98,6 @@ const App = () => (
                   <Route path="/admin/delete-user" element={<DeleteUser />} />
                   <Route path="/admin/delete-transaction" element={<DeleteTransaction />} />
                   <Route path="/admin/beneficiary-review" element={<BeneficiaryReview />} />
-                  <Route path="/temp-admin" element={<TempAdmin />} />
                   <Route path="/my-payments" element={<MyPayments />} />
                 </Route>
 
