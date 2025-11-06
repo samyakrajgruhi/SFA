@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {useLobbies} from '@/hooks/useLobbies';
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, ArrowLeft } from "lucide-react";
+import { Eye, ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,6 +17,13 @@ import { setDoc,doc,getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { generateAndReserveSfaId} from '@/utils/generateSfaId';
+
+interface Nominee{
+  name: string;
+  relationship: string;
+  phoneNumber: string;
+  sharePercentage: number;
+}
 
 const Login = () => {
   const {toast} = useToast();
@@ -43,14 +50,83 @@ const Login = () => {
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
+  const [autoGenerateSfaId, setAutoGenerateSfaId] = useState(false);
+  const [designation,setDesignation] = useState("");
+  const [dateOfBirth,setDateOfBirth] = useState("");
+  const [bloodGroup, setBloodGroup] = useState("");
+  const [presentStatus, setPresentStatus] = useState("");
+  const [pfNumber, setPfNumber] = useState("");
+  const [nominees, setNominees] = useState<Nominee[]>([
+    { name: "",
+      relationship: "",
+      phoneNumber: "",
+      sharePercentage: 0,
+    }
+  ]);
+
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
+  const [isCheckingRegistration, setIsCheckingRegistration] = useState(true); 
   
   // Password Reset functionality
   const [resetEmail, setResetEmail] = useState("");
   const [showResetForm, setShowResetForm] = useState(false);
 
-  const [autoGenerateSfaId, setAutoGenerateSfaId] = useState(false);
+  useEffect(() => {
+    const checkRegistrationStatus = async () => {
+      try{
+        const configDoc = await getDoc(doc(firestore, 'config','registration'));
+        if(configDoc.exists()) {
+          setIsRegistrationOpen(configDoc.data().isOpen || false);
+        }
+      } catch(error) {
+        console.error('Error checking registration status:',error);
+      } finally {
+        setIsCheckingRegistration(false);
+      }
+    };
 
-  function clearFields(){
+    checkRegistrationStatus();
+  }, []);
+
+  const designations = [
+    'Senior ALP',
+    'ALP',
+    'LPG',
+    'LPP',
+    'LPM',
+    'LPS/ET',
+    'CLI'
+  ];
+
+  const bloodGroups = ['A+','A-','B+','B-','AB+','AB-','O+','O-'];
+  const presentStatuses = ['Working','On Leave','Other'];
+
+  const addNominee = () => {
+    setNominees([...nominees,{
+      name: "",
+      relationship: "",
+      phoneNumber: "",
+      sharePercentage: 0
+    }]);
+  };
+
+  const removeNominee = (index: number) => {
+    if(nominees.length > 1) {
+      setNominees(nominees.filter((_,i) => i !== index));
+    }
+  };
+
+  const updateNominee = (index: number, field: keyof Nominee, value: string | number ) => {
+    const updated = [...nominees];
+    updated[index] = {...updated[index], [field]: value };
+    setNominees(updated);
+  };
+
+  const getTotalSharePercentage = () => {
+    return nominees.reduce((sum,nominee) => sum + (nominee.sharePercentage || 0), 0);
+  };
+
+  function clearFields() {
     setFullName("");
     setRegEmail("");
     setLobbyId("");
@@ -62,39 +138,89 @@ const Login = () => {
     setRegConfirmPassword("");
     setShowRegPassword(false);
     setShowRegConfirmPassword(false);
+    setDesignation("");
+    setDateOfBirth("");
+    setBloodGroup("");
+    setPresentStatus("");
+    setPfNumber("");
+    setNominees([{ name: "", relationship: "", phoneNumber: "", sharePercentage: 0 }]);
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if(!isLogin){
+      if(!designation || !dateOfBirth || !bloodGroup || !presentStatus || !pfNumber) {
+        toast({
+          title: "Error",
+          description: "Please fill in all nominee details",
+          variant: "destructive"
+        })
+      }
+
+      // Validate nominees
+      const hasEmptyNominee = nominees.some(n => !n.name || !n.relationship || !n.phoneNumber || !n.sharePercentage);
+      if (hasEmptyNominee) {
+        toast({
+          title: "Error",
+          description: "Please fill in all nominee details",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const totalShare = getTotalSharePercentage();
+      if (totalShare !== 100) {
+        toast({
+          title: "Error",
+          description: `Nominee share percentages must total 100% (currently ${totalShare}%)`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if PF Number already exists
       try {
-        if (!cmsId) {
+        const pfDoc = await getDoc(doc(firestore, 'users', pfNumber));
+        if (pfDoc.exists()) {
           toast({
             title: "Error",
-            description: "CMS ID cannot be empty!",
+            description: "This PF Number is already registered!",
             variant: "destructive",
           });
           return;
         }
+      } catch (error) {
+        console.error('Error checking PF Number:', error);
+      }
 
-        if(regPassword !== regConfirmPassword) {
-          toast({
-            title: "Error",
-            description: "Passwords do not match!",
-            variant: "destructive"
-          });
-          return;
-        }
+      if (!cmsId) {
+        toast({
+          title: "Error",
+          description: "CMS ID cannot be empty!",
+          variant: "destructive",
+        });
+        return;
+      }
 
-        if(!autoGenerateSfaId && !sfaId){
-          toast({
-            title:"Error",
-            description: "SFA ID cannot be empty",
-            variant: "destructive"
-          });
-          return;
-        }
+      if(regPassword !== regConfirmPassword) {
+        toast({
+          title: "Error",
+          description: "Passwords do not match!",
+          variant: "destructive"
+        });
+        return;
+      }
 
+      if(!autoGenerateSfaId && !sfaId){
+        toast({
+          title:"Error",
+          description: "SFA ID cannot be empty",
+          variant: "destructive"
+        });
+        return;
+      }
+      try {
+        
         const userCredentials = await createUserWithEmailAndPassword(auth, regEmail, regPassword);
         const user = userCredentials.user;
 
@@ -147,8 +273,15 @@ const Login = () => {
           isCollectionMember: false,
           phone_number: phoneNo,
           emergency_number: emergencyNo,
-          uid:user.uid          
-        }
+          uid:user.uid,
+          designation: designation,
+          date_of_birth: dateOfBirth,
+          blood_group: bloodGroup,
+          present_status: presentStatus,
+          pf_number: pfNumber,
+          nominees: nominees,
+          registration_date: new Date()          
+        };
 
         await setDoc(doc(firestore,"users",finalSfaId),userData);
 
@@ -208,7 +341,7 @@ const Login = () => {
 
         {/* Auth Card */}
         <div className="bg-surface border border-border rounded-xl p-8 shadow-lg">
-          {/* Login/Register Buttons */}
+          {/* Login/Register Toggle */}
           <div className="flex items-center justify-center mb-8">
             <div className="flex items-center gap-2 p-1 bg-surface-hover rounded-lg">
               <button
@@ -225,16 +358,26 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => setIsLogin(false)}
+                disabled={!isRegistrationOpen}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   !isLogin
                     ? "bg-primary text-white shadow"
                     : "text-text-secondary hover:bg-primary/10"
-                }`}
+                } ${!isRegistrationOpen ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 Register
               </button>
             </div>
           </div>
+
+          {/* Registration Closed Message */}
+          {!isLogin && !isRegistrationOpen && (
+            <div className="mb-6 p-4 bg-warning-light border border-warning rounded-lg">
+              <p className="text-warning font-semibold text-center">
+                Registration is currently closed. Please try again later.
+              </p>
+            </div>
+          )}
 
           {/* Header */}
           <div className="text-center mb-8">
@@ -324,7 +467,7 @@ const Login = () => {
                 Sign In
               </Button>
             </form>
-          ) : (
+          ) : isRegistrationOpen ? (
             <form className="space-y-6" onSubmit={handleSubmit}>
               {/* Full Name */}
               <div>
@@ -334,11 +477,100 @@ const Login = () => {
                 <Input
                   id="fullName"
                   type="text"
+                  required
                   placeholder="Enter your full name"
                   className="h-11"
                   value={fullName}
                   onChange={e => setFullName(e.target.value)}
                 />
+              </div>
+
+              {/* Designation */}
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="designation">
+                  Designation <span className="text-red-600">*</span>
+                </label>
+                <Select value={designation} onValueChange={setDesignation} required>
+                  <SelectTrigger className="w-full h-11">
+                    <SelectValue placeholder="Select your designation" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-surface border border-border z-50">
+                    {designations.map((des) => (
+                      <SelectItem key={des} value={des} className="hover:bg-surface-hover">
+                        {des}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Date of Birth */}
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="dateOfBirth">
+                  Date of Birth <span className="text-red-600">*</span>
+                </label>
+                <Input
+                  id="dateOfBirth"
+                  type="date"
+                  required
+                  className="h-11"
+                  value={dateOfBirth}
+                  onChange={e => setDateOfBirth(e.target.value)}
+                />
+              </div>
+
+              {/* Blood Group */}
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="bloodGroup">
+                  Blood Group <span className="text-red-600">*</span>
+                </label>
+                <Select value={bloodGroup} onValueChange={setBloodGroup} required>
+                  <SelectTrigger className="w-full h-11">
+                    <SelectValue placeholder="Select your blood group" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-surface border border-border z-50">
+                    {bloodGroups.map((bg) => (
+                      <SelectItem key={bg} value={bg} className="hover:bg-surface-hover">
+                        {bg}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* PF Number */}
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="pfNumber">
+                  PF Number <span className="text-red-600">*</span>
+                </label>
+                <Input
+                  id="pfNumber"
+                  type="text"
+                  required
+                  placeholder="Enter your PF Number"
+                  className="h-11"
+                  value={pfNumber}
+                  onChange={e => setPfNumber(e.target.value.toUpperCase())}
+                />
+              </div>
+
+              {/* Present Status */}
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="presentStatus">
+                  Present Status <span className="text-red-600">*</span>
+                </label>
+                <Select value={presentStatus} onValueChange={setPresentStatus} required>
+                  <SelectTrigger className="w-full h-11">
+                    <SelectValue placeholder="Select your present status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-surface border border-border z-50">
+                    {presentStatuses.map((status) => (
+                      <SelectItem key={status} value={status} className="hover:bg-surface-hover">
+                        {status}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Email Field */}
@@ -467,6 +699,77 @@ const Login = () => {
                 />
               </div>
 
+              {/* Nominees Section */}
+              <div className="border border-border rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium">
+                    Nominee Details <span className="text-red-600">*</span>
+                  </label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addNominee}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add Nominee
+                  </Button>
+                </div>
+
+                {nominees.map((nominee, index) => (
+                  <div key={index} className="border border-border rounded-lg p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Nominee {index + 1}</span>
+                      {nominees.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeNominee(index)}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </Button>
+                      )}
+                    </div>
+
+                    <Input
+                      placeholder="Name"
+                      required
+                      value={nominee.name}
+                      onChange={(e) => updateNominee(index, 'name', e.target.value)}
+                    />
+                    <Input
+                      placeholder="Relationship"
+                      required
+                      value={nominee.relationship}
+                      onChange={(e) => updateNominee(index, 'relationship', e.target.value)}
+                    />
+                    <Input
+                      placeholder="Phone Number"
+                      required
+                      type="tel"
+                      value={nominee.phoneNumber}
+                      onChange={(e) => updateNominee(index, 'phoneNumber', e.target.value)}
+                    />
+                    <Input
+                      placeholder="Share Percentage (%)"
+                      required
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={nominee.sharePercentage || ''}
+                      onChange={(e) => updateNominee(index, 'sharePercentage', parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                ))}
+
+                <div className="text-sm text-text-secondary">
+                  Total Share: <span className={getTotalSharePercentage() === 100 ? 'text-success' : 'text-warning'}>
+                    {getTotalSharePercentage()}%
+                  </span> / 100%
+                </div>
+              </div>
+
               {/* Password Field */}
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="regPassword">
@@ -521,50 +824,11 @@ const Login = () => {
               </div>
 
               {/* Submit Button */}
-              <Button 
-                type="submit" 
-                className="w-full h-11 text-base font-medium"
-              >
+              <Button type="submit" className="w-full h-11 text-base font-medium">
                 Create Account
               </Button>
             </form>
-          )}
-
-          {/* Footer */}
-          <div className="mt-8 text-center">
-            <p className="text-text-secondary text-sm">
-              {isLogin ? (
-                <>
-                  Don't have an account?{" "}
-                  <button
-                    type="button"
-                    onClick={() => setIsLogin(false)}
-                    className="text-primary hover:text-primary/80 font-medium transition-colors"
-                  >
-                    Create Account
-                  </button>
-                </>
-              ) : (
-                <>
-                  Already have an account?{" "}
-                  <button
-                    type="button"
-                    onClick={() => setIsLogin(true)}
-                    className="text-primary hover:text-primary/80 font-medium transition-colors"
-                  >
-                    Sign In
-                  </button>
-                </>
-              )}
-            </p>
-          </div>
-        </div>
-
-        {/* Security Notice */}
-        <div className="mt-6 text-center">
-          <p className="text-xs text-text-secondary">
-            Protected by enterprise-grade security. Your data is safe with us.
-          </p>
+          ) : null}
         </div>
       </div>
     </div>

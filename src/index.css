@@ -40,6 +40,9 @@
     /* Animation Easings */
     --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
     --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    --success: 158 64% 52%; /* Green */
+    --destructive: 0 84% 60%; /* Red */
   }
 }
 

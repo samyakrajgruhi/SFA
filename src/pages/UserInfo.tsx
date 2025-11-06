@@ -20,6 +20,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+// Add Nominee interface
+interface Nominee {
+  name: string;
+  relationship: string;
+  phoneNumber: string;
+  sharePercentage: number;
+}
+
 const UserInfo = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -42,34 +50,58 @@ const UserInfo = () => {
     role: user?.isAdmin ? 'Admin' : (user?.isCollectionMember ? 'Collection Member' : 'Member'),
     phoneNumber: user?.phoneNumber || '+91 98765 43210',
     email: user?.email || 'user@example.com',
-    emergencyNumber: user?.emergencyNumber || '+91 98765 43211'
+    emergencyNumber: user?.emergencyNumber || '+91 98765 43211',
+    designation: '',
+    dateOfBirth: '',
+    bloodGroup: '',
+    presentStatus: '',
+    pfNumber: '',
+    nominees: [] as Nominee[]
   });
 
   const [editedInfo, setEditedInfo] = useState({ ...userInfo });
 
+  // Fetch complete user data including new fields
   useEffect(() => {
+    const fetchCompleteUserData = async () => {
+      if (!user?.sfaId) return;
+
+      try {
+        const usersRef = collection(firestore, 'users');
+        const q = query(usersRef, where('sfa_id', '==', user.sfaId));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          const userData = querySnapshot.docs[0].data();
+          const userRole = user.isAdmin ? 'Admin' : (user.isCollectionMember ? 'Collection Member' : 'Member');
+          
+          const completeUserInfo = {
+            name: user.name || 'User Name',
+            sfaId: user.sfaId || 'SFA000',
+            cmsId: user.cmsId || 'CMS00000',
+            lobby: user.lobby || 'ANVT',
+            role: userRole,
+            phoneNumber: user.phoneNumber || '+91 98765 43210',
+            email: user.email || 'user@example.com',
+            emergencyNumber: user.emergencyNumber || '+91 98765 43211',
+            designation: userData.designation || '',
+            dateOfBirth: userData.date_of_birth || '',
+            bloodGroup: userData.blood_group || '',
+            presentStatus: userData.present_status || '',
+            pfNumber: userData.pf_number || '',
+            nominees: userData.nominees || []
+          };
+
+          setUserInfo(completeUserInfo);
+          setEditedInfo(completeUserInfo);
+        }
+      } catch (error) {
+        console.error('Error fetching complete user data:', error);
+      }
+    };
+
     if (user) {
-      const userRole = user.isAdmin ? 'Admin' : (user.isCollectionMember ? 'Collection Member' : 'Member');
-      setUserInfo({
-        name: user.name || 'User Name',
-        sfaId: user.sfaId || 'SFA000',
-        cmsId: user.cmsId || 'CMS00000',
-        lobby: user.lobby || 'ANVT',
-        role: userRole,
-        phoneNumber: user.phoneNumber || '+91 98765 43210',
-        email: user.email || 'user@example.com',
-        emergencyNumber: user.emergencyNumber || '+91 98765 43211'
-      });
-      setEditedInfo({
-        name: user.name || 'User Name',
-        sfaId: user.sfaId || 'SFA000',
-        cmsId: user.cmsId || 'CMS00000',
-        lobby: user.lobby || 'ANVT',
-        role: userRole,
-        phoneNumber: user.phoneNumber || '+91 98765 43210',
-        email: user.email || 'user@example.com',
-        emergencyNumber: user.emergencyNumber || '+91 98765 43211'
-      });
+      fetchCompleteUserData();
     }
   }, [user]);
 
@@ -103,6 +135,10 @@ const UserInfo = () => {
 
   const { lobbies, isLoading: isLoadingLobbies } = useLobbies();
 
+  const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+  const designations = ['Senior ALP', 'ALP', 'LPG', 'LPP', 'LPM', 'LPS/ET', 'CLI'];
+  const presentStatuses = ['Working', 'On Leave', 'Other'];
+
   const handleEdit = () => {
     setIsEditing(true);
     setEditedInfo({ ...userInfo });
@@ -133,7 +169,12 @@ const UserInfo = () => {
           phone_number: editedInfo.phoneNumber,
           emergency_number: editedInfo.emergencyNumber,
           lobby_id: editedInfo.lobby,
-          cms_id: editedInfo.cmsId
+          cms_id: editedInfo.cmsId,
+          designation: editedInfo.designation,
+          date_of_birth: editedInfo.dateOfBirth,
+          blood_group: editedInfo.bloodGroup,
+          present_status: editedInfo.presentStatus,
+          pf_number: editedInfo.pfNumber
         });
 
         setUserInfo(editedInfo);
@@ -156,7 +197,6 @@ const UserInfo = () => {
     }
   };
 
-  // QR Code Management Functions
   const handleQrFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     
@@ -204,12 +244,10 @@ const UserInfo = () => {
     try {
       setIsUploadingQr(true);
 
-      // Upload QR code to storage
       const storageRef = ref(storage, `qr_codes/${user.sfaId}_qr.${newQrFile.name.split('.').pop()}`);
       await uploadBytes(storageRef, newQrFile);
       const downloadUrl = await getDownloadURL(storageRef);
 
-      // Update user document
       const usersRef = collection(firestore, 'users');
       const q = query(usersRef, where('sfa_id', '==', user.sfaId));
       const querySnapshot = await getDocs(q);
@@ -324,100 +362,257 @@ const UserInfo = () => {
             </div>
 
             <div className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <Label htmlFor="name" className="text-text-secondary">Full Name</Label>
-                  {isEditing ? (
-                    <Input
-                      id="name"
-                      value={editedInfo.name}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.name}</p>
-                  )}
-                </div>
+              {/* Basic Information Section */}
+              <div>
+                <h3 className="text-xl font-semibold text-text-primary mb-4 pb-2 border-b border-border">
+                  Basic Information
+                </h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="name" className="text-text-secondary">Full Name</Label>
+                    {isEditing ? (
+                      <Input
+                        id="name"
+                        value={editedInfo.name}
+                        onChange={(e) => handleInputChange('name', e.target.value)}
+                        className="mt-1"
+                      />
+                    ) : (
+                      <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.name}</p>
+                    )}
+                  </div>
 
-                <div>
-                  <Label htmlFor="phone" className="text-text-secondary">Phone Number</Label>
-                  {isEditing ? (
-                    <Input
-                      id="phone"
-                      value={editedInfo.phoneNumber}
-                      onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.phoneNumber}</p>
-                  )}
-                </div>
+                  <div>
+                    <Label htmlFor="phone" className="text-text-secondary">Phone Number</Label>
+                    {isEditing ? (
+                      <Input
+                        id="phone"
+                        value={editedInfo.phoneNumber}
+                        onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                        className="mt-1"
+                      />
+                    ) : (
+                      <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.phoneNumber}</p>
+                    )}
+                  </div>
 
-                <div>
-                  <Label htmlFor="email" className="text-text-secondary">Email Address</Label>
-                  <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.email}</p>
-                </div>
+                  <div>
+                    <Label htmlFor="email" className="text-text-secondary">Email Address</Label>
+                    <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.email}</p>
+                  </div>
 
-                <div>
-                  <Label htmlFor="emergency" className="text-text-secondary">Emergency Number</Label>
-                  {isEditing ? (
-                    <Input
-                      id="emergency"
-                      value={editedInfo.emergencyNumber}
-                      onChange={(e) => handleInputChange('emergencyNumber', e.target.value)}
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.emergencyNumber}</p>
-                  )}
-                </div>
-
-                <div>
-                  <Label className="text-text-secondary">SFA ID</Label>
-                  <p className="mt-1 p-2 bg-primary-light text-primary rounded-dashboard font-medium">{userInfo.sfaId}</p>
-                </div>
-
-                <div>
-                  <Label className="text-text-secondary">CMS ID</Label>
-                  {isEditing ? (
-                    <Input
-                      id="cmsId"
-                      value={editedInfo.cmsId}
-                      onChange={(e) => handleInputChange('cmsId', e.target.value)}
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1 p-2 bg-accent-light text-accent rounded-dashboard font-mono">{userInfo.cmsId}</p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="lobby" className="text-text-secondary">Lobby</Label>
-                  {isEditing ? (
-                    <Select 
-                      value={editedInfo.lobby} 
-                      onValueChange={(value) => handleInputChange('lobby', value)}
-                      disabled={isLoadingLobbies}
-                    >
-                      <SelectTrigger className="mt-1 bg-surface border border-border">
-                        <SelectValue placeholder={isLoadingLobbies ? "Loading lobbies..." : "Select lobby"} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-surface border border-border z-50">
-                        {lobbies.map((lobby) => (
-                          <SelectItem key={lobby} value={lobby} className="hover:bg-surface-hover">{lobby}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <p className="mt-1 p-2 bg-warning-light text-warning rounded-dashboard font-medium">{userInfo.lobby}</p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="role" className="text-text-secondary">Role</Label>
-                  <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.role.toUpperCase()}</p>
+                  <div>
+                    <Label htmlFor="emergency" className="text-text-secondary">Emergency Number</Label>
+                    {isEditing ? (
+                      <Input
+                        id="emergency"
+                        value={editedInfo.emergencyNumber}
+                        onChange={(e) => handleInputChange('emergencyNumber', e.target.value)}
+                        className="mt-1"
+                      />
+                    ) : (
+                      <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.emergencyNumber}</p>
+                    )}
+                  </div>
                 </div>
               </div>
+
+              {/* SFA Details Section */}
+              <div>
+                <h3 className="text-xl font-semibold text-text-primary mb-4 pb-2 border-b border-border">
+                  SFA Details
+                </h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label className="text-text-secondary">SFA ID</Label>
+                    <p className="mt-1 p-2 bg-primary-light text-primary rounded-dashboard font-medium">{userInfo.sfaId}</p>
+                  </div>
+
+                  <div>
+                    <Label className="text-text-secondary">CMS ID</Label>
+                    {isEditing ? (
+                      <Input
+                        id="cmsId"
+                        value={editedInfo.cmsId}
+                        onChange={(e) => handleInputChange('cmsId', e.target.value)}
+                        className="mt-1"
+                      />
+                    ) : (
+                      <p className="mt-1 p-2 bg-accent-light text-accent rounded-dashboard font-mono">{userInfo.cmsId}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="lobby" className="text-text-secondary">Lobby</Label>
+                    {isEditing ? (
+                      <Select 
+                        value={editedInfo.lobby} 
+                        onValueChange={(value) => handleInputChange('lobby', value)}
+                        disabled={isLoadingLobbies}
+                      >
+                        <SelectTrigger className="mt-1 bg-surface border border-border">
+                          <SelectValue placeholder={isLoadingLobbies ? "Loading lobbies..." : "Select lobby"} />
+                        </SelectTrigger>
+                        <SelectContent className="bg-surface border border-border z-50">
+                          {lobbies.map((lobby) => (
+                            <SelectItem key={lobby} value={lobby} className="hover:bg-surface-hover">{lobby}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="mt-1 p-2 bg-warning-light text-warning rounded-dashboard font-medium">{userInfo.lobby}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="role" className="text-text-secondary">Role</Label>
+                    <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.role.toUpperCase()}</p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="pfNumber" className="text-text-secondary">PF Number</Label>
+                    {isEditing ? (
+                      <Input
+                        id="pfNumber"
+                        value={editedInfo.pfNumber}
+                        onChange={(e) => handleInputChange('pfNumber', e.target.value)}
+                        className="mt-1"
+                      />
+                    ) : (
+                      <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.pfNumber || 'Not Provided'}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Professional Details Section */}
+              <div>
+                <h3 className="text-xl font-semibold text-text-primary mb-4 pb-2 border-b border-border">
+                  Professional Details
+                </h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="designation" className="text-text-secondary">Designation</Label>
+                    {isEditing ? (
+                      <Select 
+                        value={editedInfo.designation} 
+                        onValueChange={(value) => handleInputChange('designation', value)}
+                      >
+                        <SelectTrigger className="mt-1 bg-surface border border-border">
+                          <SelectValue placeholder="Select designation" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-surface border border-border z-50">
+                          {designations.map((des) => (
+                            <SelectItem key={des} value={des} className="hover:bg-surface-hover">{des}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.designation || 'Not Provided'}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="presentStatus" className="text-text-secondary">Present Status</Label>
+                    {isEditing ? (
+                      <Select 
+                        value={editedInfo.presentStatus} 
+                        onValueChange={(value) => handleInputChange('presentStatus', value)}
+                      >
+                        <SelectTrigger className="mt-1 bg-surface border border-border">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-surface border border-border z-50">
+                          {presentStatuses.map((status) => (
+                            <SelectItem key={status} value={status} className="hover:bg-surface-hover">{status}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.presentStatus || 'Not Provided'}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Personal Details Section */}
+              <div>
+                <h3 className="text-xl font-semibold text-text-primary mb-4 pb-2 border-b border-border">
+                  Personal Details
+                </h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="dateOfBirth" className="text-text-secondary">Date of Birth</Label>
+                    {isEditing ? (
+                      <Input
+                        id="dateOfBirth"
+                        type="date"
+                        value={editedInfo.dateOfBirth}
+                        onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                        className="mt-1"
+                      />
+                    ) : (
+                      <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">
+                        {userInfo.dateOfBirth ? new Date(userInfo.dateOfBirth).toLocaleDateString() : 'Not Provided'}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="bloodGroup" className="text-text-secondary">Blood Group</Label>
+                    {isEditing ? (
+                      <Select 
+                        value={editedInfo.bloodGroup} 
+                        onValueChange={(value) => handleInputChange('bloodGroup', value)}
+                      >
+                        <SelectTrigger className="mt-1 bg-surface border border-border">
+                          <SelectValue placeholder="Select blood group" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-surface border border-border z-50">
+                          {bloodGroups.map((bg) => (
+                            <SelectItem key={bg} value={bg} className="hover:bg-surface-hover">{bg}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="mt-1 p-2 bg-surface rounded-dashboard text-text-primary">{userInfo.bloodGroup || 'Not Provided'}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Nominees Section */}
+              {userInfo.nominees && userInfo.nominees.length > 0 && (
+                <div>
+                  <h3 className="text-xl font-semibold text-text-primary mb-4 pb-2 border-b border-border">
+                    Nominees
+                  </h3>
+                  <div className="space-y-4">
+                    {userInfo.nominees.map((nominee, index) => (
+                      <div key={index} className="p-4 bg-surface rounded-dashboard border border-border">
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-text-secondary text-sm">Name</Label>
+                            <p className="text-text-primary font-medium">{nominee.name}</p>
+                          </div>
+                          <div>
+                            <Label className="text-text-secondary text-sm">Relationship</Label>
+                            <p className="text-text-primary">{nominee.relationship}</p>
+                          </div>
+                          <div>
+                            <Label className="text-text-secondary text-sm">Phone Number</Label>
+                            <p className="text-text-primary font-mono">{nominee.phoneNumber}</p>
+                          </div>
+                          <div>
+                            <Label className="text-text-secondary text-sm">Share Percentage</Label>
+                            <p className="text-text-primary font-semibold">{nominee.sharePercentage}%</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}

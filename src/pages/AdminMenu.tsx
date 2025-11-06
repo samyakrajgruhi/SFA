@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Users, DollarSign, UserPlus, Shield, FileUp, Building, UserX, Heart, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { requireAdmin } from '@/hooks/useAdminCheck';
+import { toast } from '@/components/ui/sonner';
 
 const AdminMenu = () => {
   const handleAdminAction = async () => {
@@ -56,6 +57,13 @@ const AdminMenu = () => {
       icon: UserPlus,
       path: '/admin/collection-members',
       color: 'text-warning'
+    },
+    {
+      title:"Registration Form Control",
+      description: 'Enable or disable new user registrations',
+      icon: UserPlus,
+      path: '/admin/registration-control',
+      color: 'text-success'
     },
     {
       title: 'CSV Import',

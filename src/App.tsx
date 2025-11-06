@@ -29,6 +29,7 @@ const Announcements = lazy(() => import("./pages/Announcements"));
 const PaymentConfirmation = lazy(() => import("./pages/PaymentConfirmation"));
 const MyPayments = lazy(() => import("./pages/MyPayments"))
 const DeleteTransaction = lazy(() => import("./pages/DeleteTransaction"));
+const RegistrationControl = lazy(() => import("./pages/RegistrationControl"));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -99,6 +100,7 @@ const App = () => (
                   <Route path="/admin/delete-transaction" element={<DeleteTransaction />} />
                   <Route path="/admin/beneficiary-review" element={<BeneficiaryReview />} />
                   <Route path="/my-payments" element={<MyPayments />} />
+                  <Route path="/admin/registration-control" element={<RegistrationControl />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
