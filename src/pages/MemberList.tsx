@@ -16,8 +16,8 @@ import { Search, Shield, ShieldCheck, ShieldAlert, AlertCircle, ArrowLeft } from
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { firestore } from '@/firebase';
-import { collection, getDocs, updateDoc, doc, query, where } from 'firebase/firestore';
-import {requireAdmin} from '@/hooks/useAdminCheck';
+import { collection, getDocs, updateDoc, doc, query, where, getDoc } from 'firebase/firestore';
+import { requireAdmin } from '@/hooks/useAdminCheck';
 
 interface MemberData {
   id: string;
@@ -31,16 +31,7 @@ interface MemberData {
   email: string;
 }
 
-// List of users that should always remain admins (founders, key members, etc.)
-const PROTECTED_ADMINS = [
-  "SFA1001", // Example SFA IDs of protected users   
-];
-
 const MemberList = () => {
-  const handleAdminAction = async () => {
-    if(!requireAdmin(user,toast)) return;
-  }
-  
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -49,9 +40,39 @@ const MemberList = () => {
   const [members, setMembers] = useState<MemberData[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [protectedAdmins, setProtectedAdmins] = useState<string[]>([]);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
 
   // Check if user is admin
   const isAdmin = user?.isAdmin;
+
+  // ✅ Fetch protected admins from Firestore config
+  useEffect(() => {
+    const fetchProtectedAdmins = async () => {
+      try {
+        setIsLoadingConfig(true);
+        const configDoc = await getDoc(doc(firestore, 'config', 'protected_admins'));
+        
+        if (configDoc.exists()) {
+          const data = configDoc.data();
+          setProtectedAdmins(data.sfa_ids || []);
+          console.log('✅ Loaded protected admins:', data.sfa_ids);
+        } else {
+          console.warn('⚠️ No protected admins config found');
+          setProtectedAdmins([]);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching protected admins:', error);
+        setProtectedAdmins([]);
+      } finally {
+        setIsLoadingConfig(false);
+      }
+    };
+
+    if (isAuthenticated && isAdmin) {
+      fetchProtectedAdmins();
+    }
+  }, [isAuthenticated, isAdmin]);
 
   // Fetch members from firestore
   useEffect(() => {
@@ -64,9 +85,8 @@ const MemberList = () => {
         const membersList: MemberData[] = userSnapshot.docs.map(doc => {
           const data = doc.data();
           
-          // Check if this user is a protected admin
-          const isProtectedAdmin = PROTECTED_ADMINS.includes(data.sfa_id) || 
-                                  PROTECTED_ADMINS.includes(data.full_name);
+          // ✅ Check if this user is a protected admin
+          const isProtectedAdmin = protectedAdmins.includes(data.sfa_id);
           
           return {
             id: doc.id,
@@ -94,14 +114,16 @@ const MemberList = () => {
       }
     };
 
-    if (isAuthenticated && isAdmin) {
+    // ✅ Only fetch members after protected admins are loaded
+    if (isAuthenticated && isAdmin && !isLoadingConfig) {
       fetchMembers();
     }
-  }, [isAuthenticated, isAdmin, toast]);
+  }, [isAuthenticated, isAdmin, protectedAdmins, isLoadingConfig, toast]);
 
   // Handle Admin Toggle
-  const handleAdminToggle = async (memberId: string, isCurrentlyAdmin: boolean, isProtected: boolean) =>{
-    if(isProtected && isCurrentlyAdmin) {
+  const handleAdminToggle = async (memberId: string, isCurrentlyAdmin: boolean, sfaId: string, isProtected: boolean) => {
+    // ✅ Check if user is protected
+    if (isProtected && isCurrentlyAdmin) {
       toast({
         title: "Protected Admin",
         description: "This user is a protected admin and cannot be demoted",
@@ -110,7 +132,7 @@ const MemberList = () => {
       return;
     }
 
-    try{
+    try {
       setProcessing(memberId);
 
       const userDocRef = doc(firestore, 'users', memberId);
@@ -120,24 +142,24 @@ const MemberList = () => {
       });
 
       setMembers(members.map(member => 
-        member.id === memberId? {...member, isAdmin: !isCurrentlyAdmin} : member
+        member.id === memberId ? { ...member, isAdmin: !isCurrentlyAdmin } : member
       ));
 
       toast({
         title: "Success",
         description: `User has been ${!isCurrentlyAdmin ? 'given' : 'removed from'} admin privileges.`
       });
-    }catch(error){
-      console.error("Error updating admin status:",error);
+    } catch (error) {
+      console.error("Error updating admin status:", error);
       toast({
         title: "Error",
         description: "Failed to update admin status. Please try again.",
         variant: "destructive"
       });
-    }finally{
+    } finally {
       setProcessing(null);
     }
-  }
+  };
   
   // Filter members based on search term and role filter
   const filteredMembers = members.filter(member => {
@@ -156,7 +178,7 @@ const MemberList = () => {
   });
 
   // Loading state
-  if (isLoading) {
+  if (isLoading || isLoadingConfig) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin h-12 w-12 rounded-full border-4 border-primary border-t-transparent"></div>
@@ -186,50 +208,48 @@ const MemberList = () => {
 
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-text-primary mb-4">Member List</h1>
-            <p className="text-lg text-text-secondary">Manage member roles and permissions</p>
+            <p className="text-lg text-text-secondary">View and manage member roles</p>
           </div>
 
-          <Card className="p-6 mb-8">
-            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-              <div className="relative w-full md:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
-                <Input
-                  className="pl-10 bg-surface"
-                  placeholder="Search by name, SFA ID, or CMS ID"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              
-              <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder="Filter by role" />
-                </SelectTrigger>
-                <SelectContent className="bg-surface border border-border z-50">
-                  <SelectItem value="all">All Members</SelectItem>
-                  <SelectItem value="admin">Admins</SelectItem>
-                  <SelectItem value="member">Regular Members</SelectItem>
-                  <SelectItem value="collection">Collection Members</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </Card>
-
-          <Card className="p-0 overflow-hidden">
-            <CardHeader className="p-6 bg-surface border-b border-border">
-              <CardTitle>Member List</CardTitle>
-              <CardDescription>
-                {filteredMembers.length} members found
-              </CardDescription>
+          <Card className="p-6">
+            <CardHeader>
+              <CardTitle>Members ({members.length})</CardTitle>
+              <CardDescription>Search and filter members by role</CardDescription>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent>
+              {/* Search and Filter Controls */}
+              <div className="flex flex-col md:flex-row gap-4 mb-6">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted w-4 h-4" />
+                  <Input
+                    placeholder="Search by name, SFA ID, or CMS ID..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Select value={roleFilter} onValueChange={setRoleFilter}>
+                  <SelectTrigger className="w-full md:w-48">
+                    <SelectValue placeholder="Filter by role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Members</SelectItem>
+                    <SelectItem value="admin">Admins Only</SelectItem>
+                    <SelectItem value="collection">Collection Members</SelectItem>
+                    <SelectItem value="member">Regular Members</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Members Table */}
               {isLoadingMembers ? (
-                <div className="flex justify-center items-center p-12">
-                  <div className="animate-spin h-8 w-8 rounded-full border-4 border-primary border-t-transparent"></div>
+                <div className="flex justify-center py-12">
+                  <div className="animate-spin h-12 w-12 rounded-full border-4 border-primary border-t-transparent"></div>
                 </div>
               ) : filteredMembers.length === 0 ? (
-                <div className="text-center p-12 text-text-secondary">
-                  No members found matching your search criteria
+                <div className="text-center py-12">
+                  <AlertCircle className="w-12 h-12 text-text-muted mx-auto mb-4" />
+                  <p className="text-text-secondary">No members found matching your search</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -262,25 +282,37 @@ const MemberList = () => {
                               {member.sfaId}
                             </span>
                           </TableCell>
-                          <TableCell className="font-mono">{member.cmsId}</TableCell>
-                          <TableCell>{member.lobby}</TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-2 flex-wrap">
+                            <span className="px-2 py-1 bg-accent-light text-accent rounded-dashboard-sm font-mono text-sm">
+                              {member.cmsId}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="px-2 py-1 bg-surface-hover rounded-dashboard-sm">
+                              {member.lobby}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2 flex-wrap">
+                              {member.isProtected && (
+                                <span className="px-2 py-1 bg-warning-light text-warning rounded-dashboard-sm text-xs font-medium flex items-center gap-1">
+                                  <ShieldAlert size={12} />
+                                  Protected
+                                </span>
+                              )}
                               {member.isAdmin && (
-                                <span className="flex items-center gap-1 px-2 py-1 bg-warning-light text-warning rounded-dashboard-sm text-xs font-medium">
-                                  <ShieldAlert size={14} />
+                                <span className="px-2 py-1 bg-primary-light text-primary rounded-dashboard-sm text-xs font-medium flex items-center gap-1">
+                                  <Shield size={12} />
                                   Admin
                                 </span>
                               )}
                               {member.isCollectionMember && (
-                                <span className="flex items-center gap-1 px-2 py-1 bg-accent-light text-accent rounded-dashboard-sm text-xs font-medium">
-                                  <ShieldCheck size={14} />
+                                <span className="px-2 py-1 bg-accent-light text-accent rounded-dashboard-sm text-xs font-medium">
                                   Collection
                                 </span>
                               )}
                               {!member.isAdmin && !member.isCollectionMember && (
-                                <span className="flex items-center gap-1 px-2 py-1 bg-surface text-text-secondary rounded-dashboard-sm text-xs font-medium">
-                                  <Shield size={14} />
+                                <span className="px-2 py-1 bg-surface rounded-dashboard-sm text-xs text-text-muted">
                                   Member
                                 </span>
                               )}
@@ -291,7 +323,7 @@ const MemberList = () => {
                               <Button
                                 variant={member.isAdmin ? "destructive" : "default"}
                                 size="sm"
-                                onClick={() => handleAdminToggle(member.id, member.isAdmin, !!member.isProtected)}
+                                onClick={() => handleAdminToggle(member.id, member.isAdmin, member.sfaId, !!member.isProtected)}
                                 disabled={
                                   processing === member.id || 
                                   member.id === user?.uid || 
@@ -302,7 +334,14 @@ const MemberList = () => {
                                 {processing === member.id ? (
                                   <span className="animate-spin h-4 w-4 rounded-full border-2 border-current border-t-transparent"></span>
                                 ) : member.isAdmin ? (
-                                  "Remove Admin"
+                                  member.isProtected ? (
+                                    <>
+                                      <ShieldAlert className="w-4 h-4" />
+                                      Protected
+                                    </>
+                                  ) : (
+                                    "Remove Admin"
+                                  )
                                 ) : (
                                   "Make Admin"
                                 )}
@@ -317,9 +356,6 @@ const MemberList = () => {
               )}
             </CardContent>
           </Card>
-          
-          
-
         </div>
       </main>
     </div>

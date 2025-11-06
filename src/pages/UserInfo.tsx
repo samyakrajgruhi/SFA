@@ -29,7 +29,7 @@ interface Nominee {
 }
 
 const UserInfo = () => {
-  const { user } = useAuth();
+  const { user, refreshUserData} = useAuth();
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -153,49 +153,79 @@ const UserInfo = () => {
     setEditedInfo(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSaveChanges = async () => {
-    try {
-      setIsUpdating(true);
-      
-      const usersRef = collection(firestore, 'users');
-      const q = query(usersRef, where('sfa_id', '==', user?.sfaId));
-      const querySnapshot = await getDocs(q);
+  // Update the handleSaveChanges function
 
-      if (!querySnapshot.empty) {
-        const userDocRef = doc(firestore, 'users', querySnapshot.docs[0].id);
-        
-        await updateDoc(userDocRef, {
-          full_name: editedInfo.name,
-          phone_number: editedInfo.phoneNumber,
-          emergency_number: editedInfo.emergencyNumber,
-          lobby_id: editedInfo.lobby,
-          cms_id: editedInfo.cmsId,
-          designation: editedInfo.designation,
-          date_of_birth: editedInfo.dateOfBirth,
-          blood_group: editedInfo.bloodGroup,
-          present_status: editedInfo.presentStatus,
-          pf_number: editedInfo.pfNumber
-        });
+const handleSaveChanges = async () => {
+  // ✅ Validate user data before saving
+  if (!user?.sfaId || user.sfaId === 'SFA000') {
+    toast({
+      title: "Error",
+      description: "Cannot update profile - user data not loaded properly",
+      variant: "destructive"
+    });
+    return;
+  }
 
-        setUserInfo(editedInfo);
-        setIsEditing(false);
-        
-        toast({
-          title: "Success",
-          description: "Your profile has been updated successfully"
-        });
-      }
-    } catch (error) {
-      console.error('Error updating profile:', error);
+  try {
+    setIsUpdating(true);
+    
+    console.log('💾 Saving user data for SFA ID:', user.sfaId);
+    
+    const usersRef = collection(firestore, 'users');
+    const q = query(usersRef, where('sfa_id', '==', user.sfaId));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
       toast({
         title: "Error",
-        description: "Failed to update profile. Please try again.",
+        description: "Your user document was not found. Please contact support.",
         variant: "destructive"
       });
-    } finally {
-      setIsUpdating(false);
+      return;
     }
-  };
+
+    const userDocRef = doc(firestore, 'users', querySnapshot.docs[0].id);
+    
+    const updateData = {
+      full_name: editedInfo.name,
+      phone_number: editedInfo.phoneNumber,
+      emergency_number: editedInfo.emergencyNumber,
+      lobby_id: editedInfo.lobby,
+      cms_id: editedInfo.cmsId,
+      designation: editedInfo.designation,
+      date_of_birth: editedInfo.dateOfBirth,
+      blood_group: editedInfo.bloodGroup,
+      present_status: editedInfo.presentStatus,
+      pf_number: editedInfo.pfNumber,
+      updatedAt: new Date()
+    };
+
+    console.log('💾 Updating with data:', updateData);
+    
+    await updateDoc(userDocRef, updateData);
+
+    setUserInfo(editedInfo);
+    setIsEditing(false);
+    
+    // ✅ Refresh user data in context
+    
+    await refreshUserData();
+    
+    toast({
+      title: "Success",
+      description: "Your profile has been updated successfully"
+    });
+  } catch (error) {
+    console.error('❌ Error updating profile:', error);
+    toast({
+      title: "Error",
+      description: "Failed to update profile. Please try again.",
+      variant: "destructive"
+    });
+  } finally {
+    setIsUpdating(false);
+  }
+};
 
   const handleQrFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

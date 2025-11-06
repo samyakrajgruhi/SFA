@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, UserX, Search, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, UserX, Search, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { firestore } from '@/firebase';
-import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {requireAdmin} from '@/hooks/useAdminCheck';
+import { requireAdmin } from '@/hooks/useAdminCheck';
 
 interface UserInfo {
   id: string;
@@ -31,14 +31,10 @@ interface UserInfo {
   phone_number?: string;
   isAdmin?: boolean;
   isCollectionMember?: boolean;
+  isProtected?: boolean;
 }
 
 const DeleteUser = () => {
-  const handleAdminAction = async () => {
-    if(!requireAdmin(user,toast)) return;
-  }
-
-  
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -47,13 +43,43 @@ const DeleteUser = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [foundUser, setFoundUser] = useState<UserInfo | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [protectedAdmins, setProtectedAdmins] = useState<string[]>([]);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
   
   const isAdmin = user?.isAdmin;
 
-  // Protected users that cannot be deleted
-  const PROTECTED_USERS = [
-    "SFA1001", // Add SFA IDs of users that should never be deleted
-  ];
+  // ✅ Fetch protected admins from Firestore config
+  useEffect(() => {
+    const fetchProtectedAdmins = async () => {
+      try {
+        setIsLoadingConfig(true);
+        const configDoc = await getDoc(doc(firestore, 'config', 'protected_admins'));
+        
+        if (configDoc.exists()) {
+          const data = configDoc.data();
+          setProtectedAdmins(data.sfa_ids || []);
+          console.log('✅ Loaded protected admins:', data.sfa_ids);
+        } else {
+          console.warn('⚠️ No protected admins config found');
+          setProtectedAdmins([]);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching protected admins:', error);
+        toast({
+          title: 'Warning',
+          description: 'Could not load protected admins list',
+          variant: 'destructive'
+        });
+        setProtectedAdmins([]);
+      } finally {
+        setIsLoadingConfig(false);
+      }
+    };
+
+    if (isAuthenticated && isAdmin) {
+      fetchProtectedAdmins();
+    }
+  }, [isAuthenticated, isAdmin, toast]);
 
   const handleSearch = async () => {
     if (!searchId.trim()) {
@@ -92,6 +118,9 @@ const DeleteUser = () => {
       const userDoc = querySnapshot.docs[0];
       const userData = userDoc.data();
       
+      // ✅ Check if user is protected
+      const isProtected = protectedAdmins.includes(userData.sfa_id);
+      
       setFoundUser({
         id: userDoc.id,
         full_name: userData.full_name || 'Unknown',
@@ -101,8 +130,17 @@ const DeleteUser = () => {
         email: userData.email || '',
         phone_number: userData.phone_number || '',
         isAdmin: userData.isAdmin || false,
-        isCollectionMember: userData.isCollectionMember || false
+        isCollectionMember: userData.isCollectionMember || false,
+        isProtected: isProtected
       });
+
+      if (isProtected) {
+        toast({
+          title: 'Protected Admin',
+          description: 'This user is a protected admin and cannot be deleted',
+          variant: 'destructive'
+        });
+      }
 
     } catch (error) {
       console.error('Error searching user:', error);
@@ -119,11 +157,13 @@ const DeleteUser = () => {
   const handleDeleteUser = async () => {
     if (!foundUser) return;
 
-    // Check if user is protected
-    if (PROTECTED_USERS.includes(foundUser.sfa_id) || foundUser.sfa_id === user?.sfaId) {
+    // ✅ Check if user is protected or trying to delete self
+    if (foundUser.isProtected || foundUser.sfa_id === user?.sfaId) {
       toast({
         title: 'Cannot Delete',
-        description: 'This user is protected and cannot be deleted',
+        description: foundUser.isProtected 
+          ? 'This user is a protected admin and cannot be deleted'
+          : 'You cannot delete your own account',
         variant: 'destructive'
       });
       return;
@@ -157,7 +197,7 @@ const DeleteUser = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isLoadingConfig) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin h-12 w-12 rounded-full border-4 border-primary border-t-transparent"></div>
@@ -238,8 +278,14 @@ const DeleteUser = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   User Details
-                  {foundUser.isAdmin && (
-                    <span className="px-2 py-1 bg-warning-light text-warning rounded-dashboard-sm text-xs font-medium">
+                  {foundUser.isProtected && (
+                    <span className="px-2 py-1 bg-warning-light text-warning rounded-dashboard-sm text-xs font-medium flex items-center gap-1">
+                      <ShieldAlert className="w-3 h-3" />
+                      PROTECTED ADMIN
+                    </span>
+                  )}
+                  {foundUser.isAdmin && !foundUser.isProtected && (
+                    <span className="px-2 py-1 bg-primary-light text-primary rounded-dashboard-sm text-xs font-medium">
                       ADMIN
                     </span>
                   )}
@@ -278,16 +324,30 @@ const DeleteUser = () => {
                   </div>
                 </div>
 
+                {foundUser.isProtected && (
+                  <div className="mb-6 p-4 bg-warning-light border border-warning rounded-dashboard flex items-start gap-3">
+                    <ShieldAlert className="w-5 h-5 text-warning mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-warning">Protected Admin</p>
+                      <p className="text-sm text-text-secondary mt-1">
+                        This user is marked as a protected admin in the system configuration and cannot be deleted.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex justify-end">
                   <Button 
                     variant="destructive"
                     onClick={() => setShowDeleteDialog(true)}
-                    disabled={PROTECTED_USERS.includes(foundUser.sfa_id) || foundUser.sfa_id === user?.sfaId}
+                    disabled={foundUser.isProtected || foundUser.sfa_id === user?.sfaId}
                     className="flex items-center gap-2"
                   >
                     <UserX className="w-4 h-4" />
-                    {PROTECTED_USERS.includes(foundUser.sfa_id) || foundUser.sfa_id === user?.sfaId 
-                      ? 'Cannot Delete (Protected)' 
+                    {foundUser.isProtected
+                      ? 'Cannot Delete (Protected)'
+                      : foundUser.sfa_id === user?.sfaId
+                      ? 'Cannot Delete (Self)'
                       : 'Delete User'
                     }
                   </Button>
