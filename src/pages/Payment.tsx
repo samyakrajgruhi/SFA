@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Card } from '@/components/ui/card';
@@ -32,17 +32,17 @@ const Payment = () => {
   const navigate = useNavigate();
 
   // ✅ CRITICAL: Validate user data is fully loaded
-  const isUserDataValid = () => {
+  const isUserDataValid = useCallback(() => {
     return (
       isDataLoaded &&
-      user?.sfaId &&
+      !!user?.sfaId &&
       user.sfaId !== 'SFA000' &&
-      user?.name &&
+      !!user?.name &&
       user.name !== 'User Name' &&
-      user?.cmsId &&
+      !!user?.cmsId &&
       user.cmsId !== 'CMS00000'
     );
-  };
+  }, [isDataLoaded, user]);
 
   // ✅ Monitor user data loading
   useEffect(() => {
@@ -71,7 +71,7 @@ const Payment = () => {
       name: user.name,
       cmsId: user.cmsId
     });
-  }, [authLoading, isDataLoaded, isAuthenticated, user]);
+  }, [authLoading,isUserDataValid, isDataLoaded, isAuthenticated, user]);
 
   useEffect(() => {
     const fetchPaymentAmounts = async () => {
@@ -142,7 +142,7 @@ const Payment = () => {
     if (isAuthenticated && isDataLoaded) {
       fetchCollectionMembers();
     }
-  }, [isAuthenticated, isDataLoaded, user, toast]);
+  }, [isAuthenticated,isUserDataValid, isDataLoaded, user, toast]);
 
   const handleProceedToPay = () => {
     if (!selectedCollector || !selectedAmount) {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallBack } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { firestore, storage } from '@/firebase';
@@ -26,15 +26,17 @@ const PaymentConfirmation = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // ✅ Validate user data
-    const isUserDataValid = () => {
+    const isUserDataValid = useCallback(() => {
         return (
-            isDataLoaded &&
-            user?.sfaId &&
-            user.sfaId !== 'SFA000' &&
-            user?.name &&
-            user.name !== 'User Name'
+        isDataLoaded &&
+        !!user?.sfaId &&
+        user.sfaId !== 'SFA000' &&
+        !!user?.name &&
+        user.name !== 'User Name' &&
+        !!user?.cmsId &&
+        user.cmsId !== 'CMS00000'
         );
-    };
+    }, [isDataLoaded, user]);
 
     // ✅ Redirect if no payment data or invalid user data
     useEffect(() => {
@@ -57,7 +59,7 @@ const PaymentConfirmation = () => {
             });
             navigate('/payment');
         }
-    }, [paymentData, user, isDataLoaded, navigate, toast]);
+    }, [paymentData, user, isUserDataValid, isDataLoaded, navigate, toast]);
 
     useEffect(() => {
         const fetchQrCode = async () => {

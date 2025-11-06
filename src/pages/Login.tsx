@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {useLobbies} from '@/hooks/useLobbies';
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { Eye, ArrowLeft, Plus, Trash2, AlertCircle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,6 +17,12 @@ import { setDoc,doc,getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { generateAndReserveSfaId} from '@/utils/generateSfaId';
+import { 
+  validatePhoneNumber, 
+  validatePfNumber, 
+  validatePassword,
+  getPasswordStrength 
+} from '@/utils/validators';
 
 interface Nominee{
   name: string;
@@ -63,6 +69,12 @@ const Login = () => {
       sharePercentage: 0,
     }
   ]);
+
+  // ✅ ONLY 3 Validation states
+  const [phoneValid, setPhoneValid] = useState(false);
+  const [pfValid, setPfValid] = useState(false);
+  const [passwordValid, setPasswordValid] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
 
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [isCheckingRegistration, setIsCheckingRegistration] = useState(true); 
@@ -126,6 +138,94 @@ const Login = () => {
     return nominees.reduce((sum,nominee) => sum + (nominee.sharePercentage || 0), 0);
   };
 
+  // ✅ 1. Phone Number Validation
+  const handlePhoneChange = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    const limited = cleaned.slice(0, 10);
+    setPhoneNo(limited);
+    
+    const validation = validatePhoneNumber(limited);
+    setPhoneValid(validation.isValid);
+  };
+
+  // ✅ Emergency Number (same validation)
+  const handleEmergencyPhoneChange = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    const limited = cleaned.slice(0, 10);
+    setEmergencyNo(limited);
+  };
+
+  // ✅ 2. PF Number Validation
+  const handlePfNumberChange = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    const limited = cleaned.slice(0, 11);
+    setPfNumber(limited);
+    
+    const validation = validatePfNumber(limited);
+    setPfValid(validation.isValid);
+  };
+
+  // ✅ 3. Password Validation
+  const handlePasswordChange = (value: string) => {
+    setRegPassword(value);
+    
+    const validation = validatePassword(value);
+    setPasswordValid(validation.isValid);
+    
+    const strength = getPasswordStrength(value);
+    setPasswordStrength(strength.strength);
+  };
+
+  // ✅ Check if form is valid
+  const isFormValid = () => {
+    // Check required fields
+    if (!fullName || !regEmail || !lobbyId || !cmsId || !designation || 
+        !dateOfBirth || !bloodGroup || !presentStatus || !regConfirmPassword) {
+      return false;
+    }
+
+    // Check SFA ID
+    if (!autoGenerateSfaId && !sfaId) {
+      return false;
+    }
+
+    // ✅ Check 3 validators
+    if (!phoneValid || !pfValid || !passwordValid) {
+      return false;
+    }
+
+    // Check emergency number
+    const emergencyValidation = validatePhoneNumber(emergencyNo);
+    if (!emergencyValidation.isValid) {
+      return false;
+    }
+
+    // Check password match
+    if (regPassword !== regConfirmPassword) {
+      return false;
+    }
+
+    // Check nominees
+    const hasEmptyNominee = nominees.some(n => !n.name || !n.relationship || !n.phoneNumber || !n.sharePercentage);
+    if (hasEmptyNominee) {
+      return false;
+    }
+
+    // Check nominee phone numbers
+    for (const nominee of nominees) {
+      if (!validatePhoneNumber(nominee.phoneNumber).isValid) {
+        return false;
+      }
+    }
+
+    // Check total share
+    if (getTotalSharePercentage() !== 100) {
+      return false;
+    }
+
+    return true;
+  };
+
   function clearFields() {
     setFullName("");
     setRegEmail("");
@@ -144,36 +244,21 @@ const Login = () => {
     setPresentStatus("");
     setPfNumber("");
     setNominees([{ name: "", relationship: "", phoneNumber: "", sharePercentage: 0 }]);
+    setPhoneValid(false);
+    setPfValid(false);
+    setPasswordValid(false);
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if(!isLogin){
-      if(!designation || !dateOfBirth || !bloodGroup || !presentStatus || !pfNumber) {
+      // ✅ Final validation check
+      if (!isFormValid()) {
         toast({
-          title: "Error",
-          description: "Please fill in all nominee details",
+          title: "Form Incomplete",
+          description: "Please fill all required fields correctly",
           variant: "destructive"
-        })
-      }
-
-      // Validate nominees
-      const hasEmptyNominee = nominees.some(n => !n.name || !n.relationship || !n.phoneNumber || !n.sharePercentage);
-      if (hasEmptyNominee) {
-        toast({
-          title: "Error",
-          description: "Please fill in all nominee details",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const totalShare = getTotalSharePercentage();
-      if (totalShare !== 100) {
-        toast({
-          title: "Error",
-          description: `Nominee share percentages must total 100% (currently ${totalShare}%)`,
-          variant: "destructive",
         });
         return;
       }
@@ -192,35 +277,8 @@ const Login = () => {
       } catch (error) {
         console.error('Error checking PF Number:', error);
       }
-
-      if (!cmsId) {
-        toast({
-          title: "Error",
-          description: "CMS ID cannot be empty!",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if(regPassword !== regConfirmPassword) {
-        toast({
-          title: "Error",
-          description: "Passwords do not match!",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if(!autoGenerateSfaId && !sfaId){
-        toast({
-          title:"Error",
-          description: "SFA ID cannot be empty",
-          variant: "destructive"
-        });
-        return;
-      }
+      
       try {
-        
         const userCredentials = await createUserWithEmailAndPassword(auth, regEmail, regPassword);
         const user = userCredentials.user;
 
@@ -229,11 +287,9 @@ const Login = () => {
         if(autoGenerateSfaId) {
           try {
             console.log('Current user:',auth.currentUser);
-
             finalSfaId = await generateAndReserveSfaId();
             setSfaId(finalSfaId);
           } catch (error){
-
             await user.delete();
             toast({
               title: "Error",
@@ -243,11 +299,9 @@ const Login = () => {
             return;
           }
         }else {
-          // Manual SFA ID - check if it exists
           try {
             const existingDoc = await getDoc(doc(firestore, "users", finalSfaId));
             if (existingDoc.exists()) {
-              // Delete auth account since SFA ID is taken
               await user.delete();
               toast({
                 title:"Error",
@@ -257,8 +311,6 @@ const Login = () => {
               return;
             }
           } catch (error) {
-            // If check fails due to permissions, still allow creation
-            // Firestore will prevent duplicates at document creation
             console.warn('Could not check SFA ID uniqueness:', error);
           }
         }
@@ -315,15 +367,13 @@ const Login = () => {
 
       }catch(e){
         toast({
-          title: "Registration Failed",
-          description: e.message || "Please try again with different information.",
+          title: "Login Failed",
+          description: e.message || "Invalid Email or Password!",
           variant: "destructive",
         });
       }
     }
   };
-
-  
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8">
@@ -396,10 +446,9 @@ const Login = () => {
             </p>
           </div>
 
-          {/* Conditional Forms */}
+          {/* LOGIN FORM */}
           {isLogin ? (
             <form className="space-y-6" onSubmit={handleSubmit}>
-              {/* Email Field */}
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="email">
                   Email Address
@@ -414,7 +463,6 @@ const Login = () => {
                 />
               </div>
 
-              {/* Password Field */}
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="password">
                   Password
@@ -439,7 +487,6 @@ const Login = () => {
                 </div>
               </div>
 
-              {/* Remember Me & Forgot Password */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -459,7 +506,6 @@ const Login = () => {
                 </Link>
               </div>
 
-              {/* Submit Button */}
               <Button 
                 type="submit" 
                 className="w-full h-11 text-base font-medium"
@@ -472,7 +518,7 @@ const Login = () => {
               {/* Full Name */}
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="fullName">
-                  Full Name
+                  Full Name <span className="text-red-600">*</span>
                 </label>
                 <Input
                   id="fullName"
@@ -538,20 +584,35 @@ const Login = () => {
                 </Select>
               </div>
 
-              {/* PF Number */}
+              {/* ✅ 1. PF Number - 11 digits */}
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="pfNumber">
-                  PF Number <span className="text-red-600">*</span>
+                  PF Number (11 digits) <span className="text-red-600">*</span>
                 </label>
                 <Input
                   id="pfNumber"
-                  type="text"
+                  type="tel"
                   required
-                  placeholder="Enter your PF Number"
-                  className="h-11"
+                  placeholder="Enter 11-digit PF number"
+                  className={`h-11 ${pfNumber && (pfValid ? 'border-success' : 'border-destructive')}`}
                   value={pfNumber}
-                  onChange={e => setPfNumber(e.target.value.toUpperCase())}
+                  onChange={e => handlePfNumberChange(e.target.value)}
+                  maxLength={11}
                 />
+                <p className="text-xs text-text-muted mt-1 flex items-center justify-between">
+                  <span>{pfNumber.length}/11 digits</span>
+                  {pfNumber.length === 11 && (
+                    pfValid ? (
+                      <span className="text-success flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> Valid
+                      </span>
+                    ) : (
+                      <span className="text-destructive flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> Invalid
+                      </span>
+                    )
+                  )}
+                </p>
               </div>
 
               {/* Present Status */}
@@ -573,14 +634,15 @@ const Login = () => {
                 </Select>
               </div>
 
-              {/* Email Field */}
+              {/* Email */}
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="regEmail">
-                  Email Address
+                  Email Address <span className="text-red-600">*</span>
                 </label>
                 <Input
                   id="regEmail"
                   type="email"
+                  required
                   placeholder="Enter your email"
                   className="h-11"
                   value={regEmail}
@@ -588,12 +650,12 @@ const Login = () => {
                 />
               </div>
 
-              {/* Lobby ID Field */}
-               <div>
+              {/* Lobby */}
+              <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="lobbyId">
                   Lobby ID <span className="text-red-600">*</span>
                 </label>
-                <Select value={lobbyId} onValueChange={setLobbyId} disabled={isLoadingLobbies}>
+                <Select value={lobbyId} onValueChange={setLobbyId} disabled={isLoadingLobbies} required>
                   <SelectTrigger className="w-full h-11">
                     <SelectValue placeholder={isLoadingLobbies ? "Loading lobbies..." : "Select your lobby"} />
                   </SelectTrigger>
@@ -607,14 +669,15 @@ const Login = () => {
                 </Select>
               </div>
 
-              {/* CMS ID Field */}
+              {/* CMS ID */}
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="cmsId">
-                  CMS ID
+                  CMS ID <span className="text-red-600">*</span>
                 </label>
                 <Input
                   id="cmsId"
                   type="text"
+                  required
                   placeholder="Enter your CMS ID"
                   className="h-11"
                   value={cmsId}
@@ -622,9 +685,9 @@ const Login = () => {
                 />
               </div>
 
-              {/* SFA ID Field */}
+              {/* SFA ID */}
               <div>
-                <label className="block text-sm font-medium mb-1" htmlFor="cmsId">
+                <label className="block text-sm font-medium mb-1" htmlFor="sfaId">
                   SFA ID {!autoGenerateSfaId && <span className="text-red-600">*</span>}
                 </label>
 
@@ -637,23 +700,20 @@ const Login = () => {
                       if (checked) setSfaId('');
                     }}
                   />
-                  <label
-                    htmlFor="autoGenerate"
-                    className="text-sm text-text-secondary cursor-pointer"
-                  >
+                  <label htmlFor="autoGenerate" className="text-sm text-text-secondary cursor-pointer">
                     Auto-generate SFA ID (for new members)
                   </label>
                 </div>
 
                 {!autoGenerateSfaId ? (
                   <Input
-                  id="sfaId"
-                  type="text"
-                  placeholder="Enter your SFA ID"
-                  className="h-11"
-                  value={sfaId}
-                  onChange={e => setSfaId(e.target.value.toUpperCase())}
-                />
+                    id="sfaId"
+                    type="text"
+                    placeholder="Enter your SFA ID"
+                    className="h-11"
+                    value={sfaId}
+                    onChange={e => setSfaId(e.target.value.toUpperCase())}
+                  />
                 ) : (
                   <div className="h-11 px-3 py-2 bg-surface border border-border rounded-md flex items-center">
                     <span className="text-text-muted text-sm">
@@ -661,56 +721,66 @@ const Login = () => {
                     </span>
                   </div>
                 )}
-
-                {!autoGenerateSfaId && (
-                  <p className="text-xs text-text-muted mt-1">
-                    Enter the SFA ID that was pre-assigned to you
-                  </p>
-                )}
-
-                
               </div>
-              {/* Phone Number Field */}
+
+              {/* ✅ 2. Phone Number - 10 digits */}
               <div>
-                <label className="block text-sm font-medium mb-1" htmlFor="cmsId">
-                  Contact Number
+                <label className="block text-sm font-medium mb-1" htmlFor="phoneNo">
+                  Contact Number (10 digits) <span className="text-red-600">*</span>
                 </label>
                 <Input
                   id="phoneNo"
-                  type="number"
-                  placeholder="Enter your phone number"
-                  className="h-11"
+                  type="tel"
+                  required
+                  placeholder="Enter 10-digit phone number"
+                  className={`h-11 ${phoneNo && (phoneValid ? 'border-success' : 'border-destructive')}`}
                   value={phoneNo}
-                  onChange={e => setPhoneNo(e.target.value)}
+                  onChange={e => handlePhoneChange(e.target.value)}
+                  maxLength={10}
                 />
+                <p className="text-xs text-text-muted mt-1 flex items-center justify-between">
+                  <span>{phoneNo.length}/10 digits</span>
+                  {phoneNo.length === 10 && (
+                    phoneValid ? (
+                      <span className="text-success flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> Valid
+                      </span>
+                    ) : (
+                      <span className="text-destructive flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> Invalid
+                      </span>
+                    )
+                  )}
+                </p>
               </div>
-              {/* SFA ID Field */}
+
+              {/* Emergency Number */}
               <div>
-                <label className="block text-sm font-medium mb-1" htmlFor="cmsId">
-                  Emergency Contact
+                <label className="block text-sm font-medium mb-1" htmlFor="emergencyNo">
+                  Emergency Contact (10 digits) <span className="text-red-600">*</span>
                 </label>
                 <Input
                   id="emergencyNo"
-                  type="number"
-                  placeholder="Enter emergency phone number"
+                  type="tel"
+                  required
+                  placeholder="Enter 10-digit emergency number"
                   className="h-11"
                   value={emergencyNo}
-                  onChange={e => setEmergencyNo(e.target.value)}
+                  onChange={e => handleEmergencyPhoneChange(e.target.value)}
+                  maxLength={10}
                 />
+                <p className="text-xs text-text-muted mt-1">
+                  {emergencyNo.length}/10 digits
+                </p>
               </div>
 
-              {/* Nominees Section */}
+              {/* Nominees */}
               <div className="border border-border rounded-lg p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <label className="block text-sm font-medium">
                     Nominee Details <span className="text-red-600">*</span>
                   </label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addNominee}
-                  >
+                  <Button type="button" variant="outline" size="sm" onClick={addNominee}>
                     <Plus className="w-4 h-4 mr-1" />
                     Add Nominee
                   </Button>
@@ -721,12 +791,7 @@ const Login = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Nominee {index + 1}</span>
                       {nominees.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeNominee(index)}
-                        >
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeNominee(index)}>
                           <Trash2 className="w-4 h-4 text-red-600" />
                         </Button>
                       )}
@@ -745,11 +810,15 @@ const Login = () => {
                       onChange={(e) => updateNominee(index, 'relationship', e.target.value)}
                     />
                     <Input
-                      placeholder="Phone Number"
+                      placeholder="Phone Number (10 digits)"
                       required
                       type="tel"
+                      maxLength={10}
                       value={nominee.phoneNumber}
-                      onChange={(e) => updateNominee(index, 'phoneNumber', e.target.value)}
+                      onChange={(e) => {
+                        const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        updateNominee(index, 'phoneNumber', cleaned);
+                      }}
                     />
                     <Input
                       placeholder="Share Percentage (%)"
@@ -770,19 +839,20 @@ const Login = () => {
                 </div>
               </div>
 
-              {/* Password Field */}
+              {/* ✅ 3. Password - 8 chars, 1 uppercase, 1 symbol */}
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="regPassword">
-                  Password
+                  Password <span className="text-red-600">*</span>
                 </label>
                 <div className="relative">
                   <Input
                     id="regPassword"
                     type={showRegPassword ? "text" : "password"}
+                    required
                     placeholder="Create a password"
-                    className="h-11 pr-10"
+                    className={`h-11 pr-10 ${regPassword && (passwordValid ? 'border-success' : 'border-destructive')}`}
                     value={regPassword}
-                    onChange={e => setRegPassword(e.target.value)}
+                    onChange={e => handlePasswordChange(e.target.value)}
                   />
                   <button
                     type="button"
@@ -793,20 +863,46 @@ const Login = () => {
                     <Eye className="w-4 h-4" />
                   </button>
                 </div>
+                
+                {regPassword && (
+                  <div className="mt-2">
+                    <div className="flex gap-1 mb-1">
+                      <div className={`h-1 flex-1 rounded ${passwordStrength === 'weak' ? 'bg-red-500' : passwordStrength === 'medium' ? 'bg-yellow-500' : 'bg-green-500'}`} />
+                      <div className={`h-1 flex-1 rounded ${passwordStrength === 'medium' || passwordStrength === 'strong' ? 'bg-yellow-500' : 'bg-gray-300'}`} />
+                      <div className={`h-1 flex-1 rounded ${passwordStrength === 'strong' ? 'bg-green-500' : 'bg-gray-300'}`} />
+                    </div>
+                    <p className={`text-xs ${passwordStrength === 'weak' ? 'text-red-500' : passwordStrength === 'medium' ? 'text-yellow-600' : 'text-green-600'}`}>
+                      Strength: {passwordStrength.charAt(0).toUpperCase() + passwordStrength.slice(1)}
+                    </p>
+                  </div>
+                )}
+
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs text-text-muted">Requirements:</p>
+                  <ul className="text-xs space-y-1">
+                    <li className={regPassword.length >= 8 ? 'text-success' : 'text-text-muted'}>
+                      {regPassword.length >= 8 ? '✓' : '○'} At least 8 characters
+                    </li>
+                    <li className={/[A-Z]/.test(regPassword) ? 'text-success' : 'text-text-muted'}>
+                      {/[A-Z]/.test(regPassword) ? '✓' : '○'} One uppercase letter
+                    </li>
+                    <li className={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(regPassword) ? 'text-success' : 'text-text-muted'}>
+                      {/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(regPassword) ? '✓' : '○'} One special character
+                    </li>
+                  </ul>
+                </div>
               </div>
 
               {/* Confirm Password */}
               <div>
-                <label
-                  className="block text-sm font-medium mb-1"
-                  htmlFor="regConfirmPassword"
-                >
-                  Confirm Password
+                <label className="block text-sm font-medium mb-1" htmlFor="regConfirmPassword">
+                  Confirm Password <span className="text-red-600">*</span>
                 </label>
                 <div className="relative">
                   <Input
                     id="regConfirmPassword"
                     type={showRegConfirmPassword ? "text" : "password"}
+                    required
                     placeholder="Confirm your password"
                     className="h-11 pr-10"
                     value={regConfirmPassword}
@@ -823,10 +919,32 @@ const Login = () => {
                 </div>
               </div>
 
-              {/* Submit Button */}
-              <Button type="submit" className="w-full h-11 text-base font-medium">
-                Create Account
+              {/* ✅ Submit Button - DISABLED until form is valid */}
+              <Button 
+                type="submit" 
+                className="w-full h-11 text-base font-medium"
+                disabled={!isFormValid()}
+              >
+                {isFormValid() ? 'Create Account' : 'Complete All Fields to Register'}
               </Button>
+
+              {/* Validation Summary */}
+              {!isFormValid() && (phoneNo || pfNumber || regPassword) && (
+                <div className="p-3 bg-warning-light rounded-lg border border-warning">
+                  <p className="text-xs font-semibold text-warning mb-1">Required validations:</p>
+                  <ul className="text-xs space-y-1">
+                    {!phoneValid && phoneNo && (
+                      <li className="text-warning">• Phone: Must be exactly 10 digits</li>
+                    )}
+                    {!pfValid && pfNumber && (
+                      <li className="text-warning">• PF Number: Must be exactly 11 digits</li>
+                    )}
+                    {!passwordValid && regPassword && (
+                      <li className="text-warning">• Password: Must meet all requirements</li>
+                    )}
+                  </ul>
+                </div>
+              )}
             </form>
           ) : null}
         </div>
