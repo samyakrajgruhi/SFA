@@ -45,6 +45,12 @@ interface MemberData {
   presentStatus?: string;
   pfNumber?: string;
   registrationDate?: Date;
+  nominees?: Array<{
+    name: string;
+    relationship: string;
+    phoneNumber: string;
+    sharePercentage: number;
+  }>;
 }
 
 
@@ -124,7 +130,8 @@ const MemberList = () => {
             bloodGroup: data.blood_group,
             presentStatus: data.present_status,
             pfNumber: data.pf_number,
-            registrationDate: data.registration_date?.toDate()
+            registrationDate: data.registration_date?.toDate(),
+            nominees: data.nominees || []
           };
         });
         
@@ -575,6 +582,67 @@ const MemberList = () => {
                       day: 'numeric'
                     })}
                   </p>
+                </div>
+              )}
+
+              {/* ✅ NEW: Nominees Section */}
+              {selectedMember.nominees && selectedMember.nominees.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-text-primary mb-3 pb-2 border-b border-border">
+                    Nominee Details ({selectedMember.nominees.length})
+                  </h4>
+                  <div className="space-y-3">
+                    {selectedMember.nominees.map((nominee, index) => (
+                      <div key={index} className="p-4 bg-surface rounded-lg border border-border">
+                        <div className="flex items-center justify-between mb-3">
+                          <h5 className="font-semibold text-text-primary">Nominee {index + 1}</h5>
+                          <span className="px-2 py-1 bg-primary-light text-primary rounded-dashboard-sm text-xs font-semibold">
+                            {nominee.sharePercentage}% Share
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <p className="text-xs text-text-secondary mb-1">Name</p>
+                            <p className="text-sm text-text-primary font-medium">{nominee.name}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-text-secondary mb-1">Relationship</p>
+                            <p className="text-sm text-text-primary">{nominee.relationship}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-text-secondary mb-1 flex items-center gap-1">
+                              <Phone className="w-3 h-3" />
+                              Phone Number
+                            </p>
+                            <p className="text-sm text-text-primary font-mono">{nominee.phoneNumber}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Total Share Verification */}
+                    <div className="p-3 bg-primary-light rounded-lg border border-primary">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-primary">Total Share Allocated</span>
+                        <span className="text-lg font-bold text-primary">
+                          {selectedMember.nominees.reduce((sum, n) => sum + n.sharePercentage, 0)}%
+                        </span>
+                      </div>
+                      {selectedMember.nominees.reduce((sum, n) => sum + n.sharePercentage, 0) !== 100 && (
+                        <p className="text-xs text-warning mt-2 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          Note: Total share does not equal 100%
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Show message if no nominees */}
+              {(!selectedMember.nominees || selectedMember.nominees.length === 0) && (
+                <div className="p-6 bg-surface rounded-lg border border-border text-center">
+                  <p className="text-sm text-text-secondary">No nominee information available</p>
                 </div>
               )}
             </div>

@@ -101,6 +101,8 @@ const App = () => (
                   <Route path="/admin/beneficiary-review" element={<BeneficiaryReview />} />
                   <Route path="/my-payments" element={<MyPayments />} />
                   <Route path="/admin/registration-control" element={<RegistrationControl />} />
+                  <Route path="/beneficiary-request" element={<BeneficiaryRequest />} />
+                  <Route path="/admin/beneficiary-review" element={<BeneficiaryReview />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

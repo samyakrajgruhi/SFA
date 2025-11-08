@@ -73,6 +73,9 @@ const Navbar = () => {
                 <Link to="/payment" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">
                   Payment
                 </Link>
+                <Link to="/beneficiary-request" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
+                  Beneficiary Request
+                </Link>
 
               </>
             ) : (
@@ -113,16 +116,21 @@ const Navbar = () => {
                       <Link to="/user-info" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
                         User Info
                       </Link>
+                      <Link to="/beneficiary-request" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
+                        Beneficiary Request
+                      </Link>
                       <Link to="/payment" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
                         Payment
-                      </Link>
-                      <Link to="/my-payments" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
-                        My Payments
                       </Link>
                     </>
                   ) : (
                     <Link to="/login" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium py-2 px-4 hover:bg-surface-hover rounded-dashboard">
                       Login
+                    </Link>
+                  )}
+                  {isAuthenticated && user?.isCollectionMember && (
+                    <Link to="/my-payments" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">
+                      My Payments
                     </Link>
                   )}
 

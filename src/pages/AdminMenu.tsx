@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, DollarSign, UserPlus, Shield, FileUp, Building, UserX, Heart, Trash2 } from 'lucide-react';
+import { Users, DollarSign, UserPlus, Shield, FileUp, Building, UserX, Heart, Trash2, UserCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { requireAdmin } from '@/hooks/useAdminCheck';
 import { toast } from '@/components/ui/sonner';
@@ -57,6 +57,13 @@ const AdminMenu = () => {
       icon: UserPlus,
       path: '/admin/collection-members',
       color: 'text-warning'
+    },
+    {
+      title: 'Beneficiary Review',
+      description: 'Review and approve member benefit requests',
+      icon: UserCheck,
+      path: '/admin/beneficiary-review',
+      color: 'text-primary'
     },
     {
       title:"Registration Form Control",

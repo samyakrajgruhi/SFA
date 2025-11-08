@@ -57,7 +57,7 @@ const Login = () => {
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
-  const [autoGenerateSfaId, setAutoGenerateSfaId] = useState(false);
+  // const [autoGenerateSfaId, setAutoGenerateSfaId] = useState(false);
   const [designation,setDesignation] = useState("");
   const [dateOfBirth,setDateOfBirth] = useState("");
   const [bloodGroup, setBloodGroup] = useState("");
@@ -242,7 +242,7 @@ const Login = () => {
   const isFormValid = () => {
     // Check required fields
     if (!fullName || !regEmail || !lobbyId || !cmsId || !designation || 
-        !dateOfBirth || !bloodGroup || !presentStatus || !regConfirmPassword) {
+        !dateOfBirth || !bloodGroup || !presentStatus || !regConfirmPassword || !sfaId) {
       return false;
     }
 
@@ -252,12 +252,12 @@ const Login = () => {
     }
 
     // Check SFA ID
-    if (!autoGenerateSfaId && !sfaId) {
+    if (!sfaId) {
       return false;
     }
 
     // ✅ Check SFA ID format if not auto-generating
-    if (!autoGenerateSfaId && !sfaIdValid) {
+    if (!sfaIdValid) {
       return false;
     }
 
@@ -394,17 +394,17 @@ const Login = () => {
       }
 
       // ✅ Additional format validation for SFA and CMS IDs
-      if (!autoGenerateSfaId) {
-        const sfaValidation = validateSfaIdFormat(sfaId);
-        if (!sfaValidation.isValid) {
-          toast({
-            title: "Invalid SFA ID",
-            description: sfaValidation.error,
-            variant: "destructive"
-          });
-          return;
-        }
+      
+      const sfaValidation = validateSfaIdFormat(sfaId);
+      if (!sfaValidation.isValid) {
+        toast({
+          title: "Invalid SFA ID",
+          description: sfaValidation.error,
+          variant: "destructive"
+        });
+        return;
       }
+      
 
       const cmsValidation = validateCmsIdFormat(cmsId, lobbyId);
       if (!cmsValidation.isValid) {
@@ -438,38 +438,23 @@ const Login = () => {
         const userCredentials = await createUserWithEmailAndPassword(auth, regEmail, regPassword);
         const user = userCredentials.user;
 
-        let finalSfaId = sfaId;
+        const finalSfaId = sfaId;
 
-        if(autoGenerateSfaId) {
-          try {
-            console.log('Current user:',auth.currentUser);
-            finalSfaId = await generateAndReserveSfaId();
-            setSfaId(finalSfaId);
-          } catch (error){
+        try {
+          const existingDoc = await getDoc(doc(firestore, "users", finalSfaId));
+          if (existingDoc.exists()) {
             await user.delete();
             toast({
-              title: "Error",
-              description: error.message || "Failed to generate SFA ID",
-              variant: "destructive",
+              title:"Error",
+              description: "This SFA ID already exists!",
+              variant: "destructive"
             });
             return;
           }
-        }else {
-          try {
-            const existingDoc = await getDoc(doc(firestore, "users", finalSfaId));
-            if (existingDoc.exists()) {
-              await user.delete();
-              toast({
-                title:"Error",
-                description: "This SFA ID already exists!",
-                variant: "destructive"
-              });
-              return;
-            }
-          } catch (error) {
-            console.warn('Could not check SFA ID uniqueness:', error);
-          }
+        } catch (error) {
+          console.warn('Could not check SFA ID uniqueness:', error);
         }
+        
         
         const userData = {
           full_name: fullName,
@@ -920,9 +905,9 @@ const Login = () => {
               {/* SFA ID */}
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="sfaId">
-                  SFA ID {!autoGenerateSfaId && <span className="text-red-600">*</span>}
+                  SFA ID <span className="text-red-600">*</span>
                 </label>
-
+                {/* 
                 <div className="flex items-center gap-2 mb-2">
                   <Checkbox
                     id="autoGenerate"
@@ -936,38 +921,31 @@ const Login = () => {
                     Auto-generate SFA ID (for new members)
                   </label>
                 </div>
-
-                {!autoGenerateSfaId ? (
+                */}
                   <div>
-                    <Input
-                      id="sfaId"
-                      type="text"
-                      placeholder="Enter your SFA ID (e.g., SFA1001)"
-                      className={`h-11 ${sfaId && (sfaIdValid ? 'border-success' : 'border-destructive')}`}
-                      value={sfaId}
-                      onChange={e => handleSfaIdChange(e.target.value)}
-                      style={{ textTransform: 'uppercase' }}
-                    />
-                    {sfaId && !sfaIdValid && (
-                      <div className="mt-1 flex items-center gap-1 text-xs text-destructive">
-                        <AlertCircle className="w-3 h-3" />
-                        <span>SFA ID must start with "SFA" (e.g., SFA1001)</span>
-                      </div>
-                    )}
-                    {sfaId && sfaIdValid && (
-                      <div className="mt-1 flex items-center gap-1 text-xs text-success">
-                        <CheckCircle className="w-3 h-3" />
-                        <span>Valid SFA ID format</span>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="h-11 px-3 py-2 bg-surface border border-border rounded-md flex items-center">
-                    <span className="text-text-muted text-sm">
-                      SFA ID will be auto-generated upon registration
-                    </span>
-                  </div>
-                )}
+                  <Input
+                    id="sfaId"
+                    type="text"
+                    placeholder="Enter your SFA ID (e.g., SFA1001)"
+                    className={`h-11 ${sfaId && (sfaIdValid ? 'border-success' : 'border-destructive')}`}
+                    value={sfaId}
+                    onChange={e => handleSfaIdChange(e.target.value)}
+                    style={{ textTransform: 'uppercase' }}
+                    required
+                  />
+                  {sfaId && !sfaIdValid && (
+                    <div className="mt-1 flex items-center gap-1 text-xs text-destructive">
+                      <AlertCircle className="w-3 h-3" />
+                      <span>SFA ID must start with "SFA" followed by numbers (e.g., SFA1001)</span>
+                    </div>
+                  )}
+                  {sfaId && sfaIdValid && (
+                    <div className="mt-1 flex items-center gap-1 text-xs text-success">
+                      <CheckCircle className="w-3 h-3" />
+                      <span>Valid SFA ID format</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* ✅ 2. Phone Number - 10 digits */}
