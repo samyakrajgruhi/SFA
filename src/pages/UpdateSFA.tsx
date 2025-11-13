@@ -1,3 +1,5 @@
+import {functions } from '@/firebase';
+import {httpsCallable} from 'firebase/functions';
 import React, { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -31,7 +33,7 @@ interface UserInfo {
   lobby_id: string;
   email: string;
   uid: string;
-  [key: string]: any;
+  [key: string]: string | boolean | integer;
 }
 
 const UpdateSFA = () => {
@@ -292,40 +294,20 @@ const UpdateSFA = () => {
     try {
       setIsUpdatingEmail(true);
 
-      // Check if email is already in use by another user
-      const usersRef = collection(firestore, 'users');
-      const emailQuery = query(usersRef, where('email', '==', cleanedEmail));
-      const emailSnapshot = await getDocs(emailQuery);
+      const updateEmailFunction = httpsCallable(functions, 'updateUserEmail');
 
-      if (!emailSnapshot.empty) {
-        toast({
-          title: 'Email Already Exists',
-          description: 'This email is already registered to another user',
-          variant: 'destructive'
-        });
-        setIsUpdatingEmail(false);
-        return;
-      }
-
-      // Update main user document
-      const userDocRef = doc(firestore, 'users', foundUserEmail.id);
-      await updateDoc(userDocRef, {
-        email: cleanedEmail,
-        updatedAt: new Date(),
-        updatedBy: user?.sfaId || 'founder',
-        previousEmail: foundUserEmail.email
+      const result = await updateEmailFunction({
+        uid: foundUserEmail.uid,
+        newEmail: cleanedEmail,
+        oldEmail: foundUserEmail.email
       });
 
-      // Update users_by_uid document
-      const uidDocRef = doc(firestore, 'users_by_uid', foundUserEmail.uid);
-      await updateDoc(uidDocRef, {
-        email: cleanedEmail,
-        updatedAt: new Date()
-      });
+      console.log('✅ Email update result:', result.data);
 
       toast({
         title: 'Success',
-        description: `Email updated from ${foundUserEmail.email} to ${cleanedEmail}. User should use "Forgot Password" to access their account.`,
+        description: `Email updated successfully! User can now login and use "Forgot Password" with ${cleanedEmail}`,
+        duration: 8000,
       });
 
       // Reset form
@@ -334,17 +316,56 @@ const UpdateSFA = () => {
       setFoundUserEmail(null);
       setShowEmailUpdateDialog(false);
     } catch (error) {
-      console.error('Error updating email:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to update email',
-        variant: 'destructive'
-      });
+      console.error('❌ Error updating email:', error);
+      
+      // Handle specific Firebase Functions errors
+      if (error.code === 'functions/unauthenticated') {
+        toast({
+          title: 'Authentication Error',
+          description: 'You must be logged in to perform this action',
+          variant: 'destructive'
+        });
+      } else if (error.code === 'functions/permission-denied') {
+        toast({
+          title: 'Permission Denied',
+          description: 'Only founders can update user emails',
+          variant: 'destructive'
+        });
+      } else if (error.code === 'functions/already-exists') {
+        toast({
+          title: 'Email Already Exists',
+          description: 'This email is already registered to another user',
+          variant: 'destructive'
+        });
+      } else if (error.code === 'functions/invalid-argument') {
+        toast({
+          title: 'Invalid Input',
+          description: error.message || 'Invalid email or missing data',
+          variant: 'destructive'
+        });
+      } else if (error.code === 'functions/not-found') {
+        toast({
+          title: 'User Not Found',
+          description: error.message || 'User document not found',
+          variant: 'destructive'
+        });
+      } else if (error.code === 'functions/internal') {
+        toast({
+          title: 'Server Error',
+          description: error.message || 'Internal server error occurred',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: error.message || 'Failed to update email. Please try again.',
+          variant: 'destructive'
+        });
+      }
     } finally {
       setIsUpdatingEmail(false);
     }
   };
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -591,11 +612,20 @@ const UpdateSFA = () => {
 
                         <Button 
                           onClick={() => setShowEmailUpdateDialog(true)}
-                          disabled={!newEmail.trim() || newEmail.trim().toLowerCase() === foundUserEmail.email.toLowerCase()}
+                          disabled={!newEmail.trim() || newEmail.trim().toLowerCase() === foundUserEmail.email.toLowerCase() || isUpdatingEmail}
                           className="w-full"
                         >
-                          <Mail className="w-4 h-4 mr-2" />
-                          Update Email Address
+                          {isUpdatingEmail ? (
+                            <>
+                              <span className="animate-spin h-4 w-4 mr-2 rounded-full border-2 border-current border-t-transparent"></span>
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <Mail className="w-4 h-4 mr-2" />
+                              Update Email Address
+                            </>
+                          )}
                         </Button>
                       </div>
                     </div>
@@ -667,25 +697,39 @@ const UpdateSFA = () => {
                   <div className="text-sm">
                     To: <span className="font-mono text-success break-all">{newEmail}</span>
                   </div>
-                  <div className="mt-4 p-3 bg-warning-light border border-warning rounded-lg">
-                    <div className="text-xs font-semibold text-warning mb-1">⚠️ Critical:</div>
+                  <div className="mt-4 p-3 bg-success-light border border-success rounded-lg">
+                    <div className="text-xs font-semibold text-success mb-1">✅ How this works:</div>
                     <ul className="text-xs text-text-secondary space-y-1">
-                      <li>• User MUST use "Forgot Password" to access account</li>
-                      <li>• Old email will stop working immediately</li>
-                      <li>• All data and transactions remain intact</li>
-                      <li>• This action is logged with your SFA ID</li>
+                      <li>• Updates email in Firebase Authentication</li>
+                      <li>• Updates email in Firestore database</li>
+                      <li>• User can use "Forgot Password" with new email immediately</li>
+                      <li>• User can login with new email after password reset</li>
+                      <li>• All data and transactions preserved</li>
+                      <li>• Action is logged in audit trail</li>
                     </ul>
                   </div>
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                {/* ✅ Disable Cancel button while updating */}
+                <AlertDialogCancel disabled={isUpdatingEmail}>
+                  Cancel
+                </AlertDialogCancel>
+                
+                {/* ✅ Show loading state on Confirm button */}
                 <AlertDialogAction
                   onClick={handleUpdateEmail}
                   disabled={isUpdatingEmail}
-                  className="bg-primary"
+                  className="bg-primary hover:bg-primary/90 min-w-[120px]"
                 >
-                  {isUpdatingEmail ? 'Updating...' : 'Confirm Update'}
+                  {isUpdatingEmail ? (
+                    <>
+                      <span className="animate-spin h-4 w-4 mr-2 rounded-full border-2 border-white border-t-transparent"></span>
+                      Updating...
+                    </>
+                  ) : (
+                    'Confirm Update'
+                  )}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

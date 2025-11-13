@@ -27,6 +27,7 @@ const RegistrationControl = () => {
 
   useEffect(() => {
     fetchRegistrationStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchRegistrationStatus = async () => {

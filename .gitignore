@@ -27,7 +27,25 @@ test.html
 
 .env
 .env.local
+.env.*.local
+
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+.runtimeconfig.json
+
+
+excel/
+trial_images/
+
+functions/lib/
+functions/node_modules/
+
+.vscode/
+.idea/
+*.code-workspace
 
 
 src/pages/TempAdmin.tsx
 execution-plan.md
+excel/
