@@ -35,6 +35,7 @@ const BeneficiaryReview = () => {
   const [isRejecting, setIsRejecting] = useState(false);
 
   const isAdmin = user?.isAdmin;
+  const isFounder = user?.isFounder;
 
   // Fetch all requests
   useEffect(() => {
@@ -55,10 +56,10 @@ const BeneficiaryReview = () => {
       }
     };
 
-    if (isAdmin) {
+    if (isAdmin || isFounder) {
       fetchRequests();
     }
-  }, [isAdmin]);
+  }, [isAdmin,isFounder,toast]);
 
   // Fetch approval history when request is selected
   useEffect(() => {
@@ -176,6 +177,10 @@ const BeneficiaryReview = () => {
     return request.rejectedBy?.includes(user?.sfaId || '');
   };
 
+  if (!isAdmin || !isFounder) {
+    return <Navigate to="/" replace />;
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -184,9 +189,7 @@ const BeneficiaryReview = () => {
     );
   }
 
-  if (!isAdmin) {
-    return <Navigate to="/" replace />;
-  }
+  
 
   return (
     <div className="min-h-screen bg-background">

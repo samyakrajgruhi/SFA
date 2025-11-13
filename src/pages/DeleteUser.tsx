@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { requireAdmin } from '@/hooks/useAdminCheck';
+import { requireFounder } from '@/hooks/useFounderCheck';
 
 interface UserInfo {
   id: string;
@@ -35,6 +35,7 @@ interface UserInfo {
   email: string;
   phone_number?: string;
   isAdmin?: boolean;
+  isFounder?: boolean;
   isCollectionMember?: boolean;
   isProtected?: boolean;
   isDisabled?: boolean;
@@ -48,6 +49,12 @@ const DeleteUser = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const isFounder = user?.isFounder;
+
+  const handleFounderAction = async () => {
+    if(!requireFounder(user,toast)) return;
+  }
   const [searchId, setSearchId] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -55,8 +62,6 @@ const DeleteUser = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [protectedAdmins, setProtectedAdmins] = useState<string[]>([]);
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
-  
-  const isAdmin = user?.isAdmin;
 
   // ✅ Fetch protected admins from Firestore config
   useEffect(() => {
@@ -86,10 +91,10 @@ const DeleteUser = () => {
       }
     };
 
-    if (isAuthenticated && isAdmin) {
+    if (isAuthenticated && isFounder) {
       fetchProtectedAdmins();
     }
-  }, [isAuthenticated, isAdmin, toast]);
+  }, [isAuthenticated, isFounder, toast]);
 
   const handleSearch = async () => {
     if (!searchId.trim()) {
@@ -138,6 +143,7 @@ const DeleteUser = () => {
         email: userData.email || '',
         phone_number: userData.phone_number || '',
         isAdmin: userData.isAdmin || false,
+        isFounder: userData.isFounder || false,
         isCollectionMember: userData.isCollectionMember || false,
         isProtected: isProtected,
         isDisabled: userData.isDisabled || false, // ✅ NEW
@@ -240,7 +246,7 @@ const DeleteUser = () => {
     );
   }
 
-  if (!isAdmin) {
+  if (!isFounder) {
     return <Navigate to="/" replace />;
   }
 
@@ -320,7 +326,7 @@ const DeleteUser = () => {
                       PROTECTED ADMIN
                     </span>
                   )}
-                  {foundUser.isAdmin && !foundUser.isProtected && (
+                  {foundUser.isFounder && !foundUser.isProtected && (
                     <span className="px-2 py-1 bg-primary-light text-primary rounded-dashboard-sm text-xs font-medium">
                       ADMIN
                     </span>

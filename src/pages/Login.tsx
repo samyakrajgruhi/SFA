@@ -185,22 +185,35 @@ const Login = () => {
   };
 
   const validateSfaIdFormat = (sfaId: string): { isValid: boolean; error?: string } => {
-    // Check for spaces
-    if (/\s/.test(sfaId)) {
-      return { isValid: false, error: 'SFA ID cannot contain spaces' };
+    // Check if empty
+    if (!sfaId || sfaId.trim() === '') {
+      return { isValid: false, error: 'SFA ID is required' };
     }
+
+    // Remove spaces for validation
+    const cleanedSfaId = sfaId.replace(/\s/g, '').toUpperCase();
     
-    if (!sfaId.startsWith('SFA')) {
+    // Check if it starts with SFA (case-insensitive)
+    if (!cleanedSfaId.startsWith('SFA')) {
       return { isValid: false, error: 'SFA ID must start with "SFA"' };
     }
     
-    if (sfaId.length < 7) {
-      return { isValid: false, error: 'SFA ID must be at least 7 characters (e.g., SFA1001)' };
+    // Extract the number part after "SFA"
+    const numberPart = cleanedSfaId.substring(3);
+    
+    // Check if there's a number part
+    if (numberPart.length === 0) {
+      return { isValid: false, error: 'SFA ID must include a number (e.g., SFA1001)' };
     }
     
-    // Only allow alphanumeric characters after SFA
-    if (!/^SFA[0-9]+$/.test(sfaId)) {
-      return { isValid: false, error: 'SFA ID must be in format: SFA followed by numbers (e.g., SFA1001)' };
+    // Check if number part contains only digits
+    if (!/^\d+$/.test(numberPart)) {
+      return { isValid: false, error: 'SFA ID must be in format: SFA followed by numbers only (e.g., SFA1001)' };
+    }
+    
+    // Check minimum length (SFA + at least 1 digit = minimum 4 characters)
+    if (cleanedSfaId.length < 3) {
+      return { isValid: false, error: 'SFA ID must be at least 4 characters (e.g., SFA1 or SFA1001)' };
     }
     
     return { isValid: true };
@@ -308,14 +321,19 @@ const Login = () => {
   };
 
   // Update handleSfaIdChange function (around line 283)
+  
   const handleSfaIdChange = (value: string) => {
     // Remove all spaces and convert to uppercase
     const cleanedValue = value.replace(/\s/g, '').toUpperCase();
     setSfaId(cleanedValue);
     
-    if (!autoGenerateSfaId) {
-      const validation = validateSfaIdFormat(cleanedValue);
-      setSfaIdValid(validation.isValid);
+    // Always validate when user types
+    const validation = validateSfaIdFormat(cleanedValue);
+    setSfaIdValid(validation.isValid);
+    
+    // Show validation error in console for debugging
+    if (!validation.isValid && cleanedValue.length > 0) {
+      console.log('SFA ID Validation:', validation.error);
     }
   };
 
@@ -477,6 +495,17 @@ const Login = () => {
         };
 
         await setDoc(doc(firestore,"users",finalSfaId),userData);
+
+        await setDoc(doc(firestore, "users_by_uid", user.uid), {
+          uid: user.uid,
+          sfa_id: finalSfaId,
+          email: regEmail,
+          full_name: fullName,
+          isAdmin: false,
+          isFounder: false,
+          isCollectionMember: false,
+          createdAt: new Date()
+        });
 
         clearFields();
         toast({
@@ -927,7 +956,13 @@ const Login = () => {
                     id="sfaId"
                     type="text"
                     placeholder="Enter your SFA ID (e.g., SFA1001)"
-                    className={`h-11 ${sfaId && (sfaIdValid ? 'border-success' : 'border-destructive')}`}
+                    className={`h-11 ${
+                      sfaId && sfaId.length > 0
+                        ? sfaIdValid 
+                          ? 'border-success focus:border-success' 
+                          : 'border-destructive focus:border-destructive'
+                        : ''
+                    }`}
                     value={sfaId}
                     onChange={e => handleSfaIdChange(e.target.value)}
                     style={{ textTransform: 'uppercase' }}
@@ -936,13 +971,13 @@ const Login = () => {
                   {sfaId && !sfaIdValid && (
                     <div className="mt-1 flex items-center gap-1 text-xs text-destructive">
                       <AlertCircle className="w-3 h-3" />
-                      <span>SFA ID must start with "SFA" followed by numbers (e.g., SFA1001)</span>
+                      <span>Format: SFA followed by numbers (e.g., SFA1, SFA1001, SFA12345)</span>
                     </div>
                   )}
                   {sfaId && sfaIdValid && (
                     <div className="mt-1 flex items-center gap-1 text-xs text-success">
                       <CheckCircle className="w-3 h-3" />
-                      <span>Valid SFA ID format</span>
+                      <span>Valid SFA ID format ✓</span>
                     </div>
                   )}
                 </div>

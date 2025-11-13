@@ -12,18 +12,22 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import {requireAdmin} from '@/hooks/useAdminCheck';
 
 const LobbiesManagement = () => {
-    const handleAdminAction = async () => {
-    if(!requireAdmin(user,toast)) return;
-  }
+    
   
     const { user, isAuthenticated, isLoading} = useAuth();
     const {toast} = useToast();
     const navigate = useNavigate();
+
+    const isFounder = user?.isFounder;
+
+    const handleFounderAction = async () => {
+        if(!requireFounder(user,toast)) return;
+    }
     const [lobbies, setLobbies] = useState<string[]>(['ANVT','DEE','DLI','GHH','JIND','KRJNDD', 'MTC', 'NZM', 'PNP', 'ROK', 'SSB']);
     const [newLobby, setNewLobby] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [isLoadingLobbies, setIsLoadingLobbies] = useState(true);
-    const isAdmin = user?.isAdmin;
+
 
     useEffect(() => {
         const fetchLobbies = async () =>{
@@ -40,10 +44,10 @@ const LobbiesManagement = () => {
             }
         };
 
-        if(isAuthenticated && isAdmin) {
+        if(isAuthenticated && isFounder) {
             fetchLobbies();
         }
-    }, [isAuthenticated, isAdmin]);
+    }, [isAuthenticated, isFounder]);
 
     const handleAddLobby = () => {
         const lobbyCode = newLobby.trim().toUpperCase();
@@ -115,7 +119,7 @@ const LobbiesManagement = () => {
         );
     }
 
-    if (!isAdmin) {
+    if (!isFounder) {
         return <Navigate to="/" replace />;
     }
 

@@ -25,7 +25,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Eye, Phone, Mail, Calendar, Users as UsersIcon } from 'lucide-react';
-import { requireAdmin } from '@/hooks/useAdminCheck';
+import { requireFounder } from '@/hooks/useFounderCheck';
 
 interface MemberData {
   id: string;
@@ -34,6 +34,7 @@ interface MemberData {
   sfaId: string;
   lobby: string;
   isProtected?: boolean;
+  isFounder?: boolean;
   isAdmin?: boolean;
   isCollectionMember: boolean;
   email: string;
@@ -58,6 +59,13 @@ const MemberList = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const isFounder = user?.isFounder;
+  const isAdmin = user?.isAdmin;
+
+  const handleFounderAction = async () => {
+    if (!requireFounder(user,toast)) return;
+  }
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [members, setMembers] = useState<MemberData[]>([]);
@@ -67,9 +75,6 @@ const MemberList = () => {
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
   const [selectedMember, setSelectedMember] = useState<MemberData | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-
-  // Check if user is admin
-  const isAdmin = user?.isAdmin;
 
   // ✅ Fetch protected admins from Firestore config
   useEffect(() => {
@@ -97,7 +102,7 @@ const MemberList = () => {
     if (isAuthenticated && isAdmin) {
       fetchProtectedAdmins();
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isFounder]);
 
   // Fetch members from firestore
   useEffect(() => {
@@ -149,10 +154,10 @@ const MemberList = () => {
     };
 
     // ✅ Only fetch members after protected admins are loaded
-    if (isAuthenticated && isAdmin && !isLoadingConfig) {
+    if (isFounder && isAuthenticated && isAdmin && !isLoadingConfig) {
       fetchMembers();
     }
-  }, [isAuthenticated, isAdmin, protectedAdmins, isLoadingConfig, toast]);
+  }, [isAuthenticated, isFounder, protectedAdmins, isLoadingConfig, toast]);
 
   const handleViewDetails = (member: MemberData) => {
     setSelectedMember(member);
@@ -225,8 +230,7 @@ const MemberList = () => {
     );
   }
 
-  // Redirect non-admins
-  if (!isAdmin) {
+  if (!isAuthenticated || !isFounder) {
     return <Navigate to="/" replace />;
   }
 

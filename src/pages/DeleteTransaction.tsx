@@ -19,6 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {requireFounder } from '@/hooks/useFounderCheck';
 
 interface TransactionInfo {
   // TODO: Define the interface based on transaction fields
@@ -37,6 +38,12 @@ const DeleteTransaction = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const isFounder = user?.isFounder;
+
+  const handleFounderAction = async () => {
+    if(!requireFounder(user,toast)) return;
+  }
   
   const [searchId, setSearchId] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -44,9 +51,8 @@ const DeleteTransaction = () => {
   const [foundTransaction, setFoundTransaction] = useState<TransactionInfo | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
-  const isAdmin = user?.isAdmin;
+ 
 
-  // TODO: Implement handleSearch function
   const handleSearch = async () => {
     // 1. Validate input
     if (!searchId.trim()) {
@@ -147,7 +153,7 @@ const DeleteTransaction = () => {
   }
 
   // Redirect non-admins
-  if (!isAdmin) {
+  if (!isAuthenticated || !isFounder) {
     return <Navigate to="/" replace />;
   }
 

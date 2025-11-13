@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, DollarSign, UserPlus, Shield, FileUp, Building, UserX, Heart, Trash2, UserCheck } from 'lucide-react';
+import { Users, DollarSign, UserPlus, Shield, FileUp, FileText, Building, UserX, Heart, Trash2, UserCheck, Edit } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { requireAdmin } from '@/hooks/useAdminCheck';
 import { toast } from '@/components/ui/sonner';
@@ -15,7 +15,9 @@ const AdminMenu = () => {
   
   const { user, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
+
   const isAdmin = user?.isAdmin;
+  const isFounder = user?.isFounder;
 
   if (isLoading) {
     return (
@@ -25,11 +27,21 @@ const AdminMenu = () => {
     );
   }
 
-  if (!isAdmin) {
+  if (!isAdmin && !isFounder) {
     return <Navigate to="/" replace />;
   }
 
-  const menuItems = [
+  const adminOnlyItems = [
+    {
+      title: 'Collection Members',
+      description: 'Make members collection members by SFA-ID',
+      icon: UserPlus,
+      path: '/admin/collection-members',
+      color: 'text-warning'
+    }
+  ]
+
+  const founderOnlyItems = [
     {
       title: 'Member List',
       description: 'View and manage member roles and permissions',
@@ -52,10 +64,10 @@ const AdminMenu = () => {
       color: 'text-success'
     },
     {
-      title: 'Collection Members',
-      description: 'Make members collection members by SFA-ID',
-      icon: UserPlus,
-      path: '/admin/collection-members',
+      title: 'Make Founder',
+      description: 'Grant founder privileges to trusted members',
+      icon: Shield,
+      path: '/admin/make-founder',
       color: 'text-warning'
     },
     {
@@ -63,6 +75,13 @@ const AdminMenu = () => {
       description: 'Review and approve member benefit requests',
       icon: UserCheck,
       path: '/admin/beneficiary-review',
+      color: 'text-primary'
+    },
+    {
+      title: 'Update SFA/Email',
+      description: 'Update incorrect SFA ID or email for users',
+      icon: Edit,
+      path: '/admin/update-sfa',
       color: 'text-primary'
     },
     {
@@ -88,82 +107,47 @@ const AdminMenu = () => {
     }
   ];
 
+  const menuItems = isFounder ? [...founderOnlyItems, ...adminOnlyItems] : adminOnlyItems;
+
   return (
-  <div className="min-h-screen bg-background">
-    <Navbar />
-    
-    <main className="pt-20">
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="text-center mb-12">
-          <div className="flex justify-center mb-4">
-            <Shield className="w-16 h-16 text-primary" />
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      
+      <main className="pt-20">
+        <div className="max-w-4xl mx-auto px-6 py-12">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold text-text-primary mb-4">
+              {isFounder ? 'Founder' : 'Admin'} Menu
+            </h1>
+            <p className="text-lg text-text-secondary">
+              {isFounder ? 'Manage all system features' : 'Manage collection members'}
+            </p>
           </div>
-          <h1 className="text-4xl font-bold text-text-primary mb-4">Admin Panel</h1>
-          <p className="text-lg text-text-secondary">Choose an option to manage your organization</p>
-        </div>
 
-        <Card className="p-8">
-          <div className="space-y-1">
+          <div className="grid md:grid-cols-2 gap-6">
             {menuItems.map((item, index) => (
-              <button
-                key={item.path}
+              <Card 
+                key={index}
+                className="hover-lift cursor-pointer transition-all duration-300"
                 onClick={() => navigate(item.path)}
-                className="w-full flex items-center gap-4 p-4 rounded-lg hover:bg-surface-hover transition-colors duration-200 group text-left"
               >
-                <div className={`p-2 rounded-lg bg-surface-hover group-hover:bg-surface ${item.color}`}>
-                  <item.icon className="w-5 h-5" />
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-semibold text-text-primary group-hover:text-primary transition-colors">
-                    {item.title}
-                  </h3>
-                  <p className="text-sm text-text-secondary mt-0.5 line-clamp-1">
-                    {item.description}
-                  </p>
-                </div>
-                
-                <div className="text-text-muted group-hover:text-primary transition-colors">
-                  <svg 
-                    className="w-5 h-5" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M9 5l7 7-7 7" 
-                    />
-                  </svg>
-                </div>
-              </button>
+                <CardContent className="p-6">
+                  <div className="flex items-start space-x-4">
+                    <div className={`p-3 bg-surface rounded-dashboard ${item.color}`}>
+                      <item.icon className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-text-primary mb-2">
+                        {item.title}
+                      </h3>
+                      <p className="text-sm text-text-secondary">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
-          </div>
-        </Card>
-
-        <div className="mt-8 text-center">
-          <Button
-            variant="outline"
-            onClick={() => navigate('/')}
-              className="gap-2"
-            >
-              <svg 
-                className="w-4 h-4" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M10 19l-7-7m0 0l7-7m-7 7h18" 
-                />
-              </svg>
-              Back to Home
-            </Button>
           </div>
         </div>
       </main>

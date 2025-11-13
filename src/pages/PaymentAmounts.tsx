@@ -9,16 +9,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { firestore } from '@/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import {requrieAdmin} from '@/hooks/useAdminCheck';
+import {requireFounder} from '@/hooks/useAdminCheck';
 
-const PaymentAmounts = () => {
-  const handleAdminAction = async () => {
-    if(!requireAdmin(user,toast)) return;
-  }
-  
+const PaymentAmounts = () => {  
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const isFounder = user?.isFounder;
+
+  const handleFounderAction = async () => {
+    if (!requireFounder(user,toast)) return;
+  }
+
   const [amounts, setAmounts] = useState<number[]>([25, 60, 500]);
   const [newAmount, setNewAmount] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -36,10 +39,10 @@ const PaymentAmounts = () => {
       }
     };
 
-    if (isAuthenticated && isAdmin) {
+    if (isAuthenticated && isFounder) {
       fetchAmounts();
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isFounder]);
 
   const handleAddAmount = () => {
     const amount = parseInt(newAmount);
@@ -111,7 +114,7 @@ const PaymentAmounts = () => {
     );
   }
 
-  if (!isAdmin) {
+   if (!isAuthenticated || !isFounder) {
     return <Navigate to="/" replace />;
   }
 

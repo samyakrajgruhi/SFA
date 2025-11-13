@@ -42,8 +42,6 @@ interface Announcement {
   createdBy: string;
 }
 
-
-
 const Announcements = () => {
   const handleAdminAction = async () => {
     if(!requireAdmin(user,toast)) return;

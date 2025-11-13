@@ -18,9 +18,11 @@ interface FirestoreUserData {
   uid?: string;
   phone_number?: string;
   isAdmin?: boolean;
+  isFounder?: boolean;
   isCollectionMember?: boolean;
   emergency_number?: string;
   sfa_id?: string;
+  isDisabled?: boolean;
 }
 
 const getUserData = async (userId: string, retries = 3): Promise<FirestoreUserData> => {
@@ -70,6 +72,7 @@ interface UserData {
   lobby?: string;
   phoneNumber?: string;
   isAdmin?: boolean;
+  isFounder?: boolean;
   isCollectionMember?: boolean;
   emergencyNumber?: string;
   sfaId?: string;
@@ -124,6 +127,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       cmsId: userData.cms_id || 'CMS00000',
       lobby: userData.lobby_id || 'ANVT',
       isAdmin: userData.isAdmin || false,
+      isFounder: userData.isFounder || false,
       isCollectionMember: userData.isCollectionMember || false,
       sfaId: userData.sfa_id || 'SFA000',
       phoneNumber: userData.phone_number || '',

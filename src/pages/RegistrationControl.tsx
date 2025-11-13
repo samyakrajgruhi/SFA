@@ -9,19 +9,21 @@ import { useToast } from '@/hooks/use-toast';
 import { firestore } from '@/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Switch } from '@/components/ui/switch';
-import { requireAdmin } from '@/hooks/useAdminCheck';
+import { requireFounder } from '@/hooks/useFounderCheck';
 
 const RegistrationControl = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const isFounder = user?.isFounder;
+
+  const handleFounderAction = async () => {
+    if (!requireFounder(user,toast)) return ;
+  }
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
-
-  const handleAdminAction = async () => {
-    if (!requireAdmin(user, toast)) return;
-  };
 
   useEffect(() => {
     fetchRegistrationStatus();
@@ -47,7 +49,7 @@ const RegistrationControl = () => {
   };
 
   const toggleRegistration = async () => {
-    if (!requireAdmin(user, toast)) return;
+    if (!requireFounder(user, toast)) return;
 
     try {
       setIsUpdating(true);
@@ -85,7 +87,7 @@ const RegistrationControl = () => {
     );
   }
 
-  if (!isAuthenticated || !user?.isAdmin) {
+  if (!isAuthenticated || !user?.isFounder) {
     return <Navigate to="/" replace />;
   }
 
