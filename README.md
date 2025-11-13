@@ -1,3 +1,5 @@
+![SFA](https://socialify.git.ci/samyakrajgruhi/SFA/image?custom_description=&description=1&font=KoHo&language=1&name=1&owner=1&pattern=Solid&theme=Dark)
+
 # SFA - Social Fraternity Association Management System
 
 A comprehensive web application for managing a social fraternity association, built with React, TypeScript, Firebase, and modern UI components. The system handles member management, payment tracking, beneficiary requests, and administrative tasks.
@@ -76,45 +78,6 @@ A comprehensive web application for managing a social fraternity association, bu
 - **React Hook Form**: Form state management
 - **Zod**: Schema validation
 - **@hookform/resolvers**: Form validation integration
-
-## 📁 Project Structure
-
-```
-SFA/
-├── src/
-│   ├── components/          # Reusable UI components
-│   │   ├── ui/             # shadcn/ui components
-│   │   └── admin/          # Admin-specific components
-│   ├── contexts/           # React contexts
-│   │   └── AuthContext.tsx # Authentication state management
-│   ├── hooks/              # Custom React hooks
-│   ├── pages/              # Page components
-│   │   ├── Homepage.tsx
-│   │   ├── Login.tsx
-│   │   ├── Dashboard.tsx
-│   │   ├── AdminMenu.tsx
-│   │   ├── BeneficiaryRequest.tsx
-│   │   └── ...
-│   ├── services/           # API service layer
-│   │   └── beneficiaryService.ts
-│   ├── utils/              # Utility functions
-│   │   ├── csvImport.tsx
-│   │   ├── csvParser.ts
-│   │   ├── exportMembers.ts
-│   │   └── validators.tsx
-│   ├── firebase.ts         # Firebase configuration
-│   ├── App.tsx             # Root component
-│   └── main.tsx            # Application entry point
-├── functions/              # Firebase Cloud Functions
-│   └── src/
-│       └── index.ts        # Cloud function definitions
-├── public/                 # Static assets
-├── excel/                  # CSV data files
-├── firebase.json           # Firebase configuration
-├── vite.config.ts          # Vite configuration
-├── tailwind.config.ts      # Tailwind CSS configuration
-└── package.json            # Dependencies and scripts
-```
 
 ## 🚦 Getting Started
 
@@ -304,7 +267,7 @@ This project is private and proprietary. All rights reserved.
 
 ## 👥 Authors
 
-- **Samyak Raj Gruhi** - *Developer* - [@samyakrajgruhi](https://github.com/samyakrajgruhi)
+- **Samyak Rajgruhi** - *Developer* - [@samyakrajgruhi](https://github.com/samyakrajgruhi)
 
 ## 🐛 Known Issues
 
@@ -314,18 +277,6 @@ This project is private and proprietary. All rights reserved.
 ## 📞 Support
 
 For support, please contact the project administrator or create an issue in the repository.
-
-## 🔮 Future Enhancements
-
-- [ ] Mobile application (React Native)
-- [ ] Advanced analytics dashboard
-- [ ] Automated payment reminders
-- [ ] Email notification system
-- [ ] SMS integration for alerts
-- [ ] Document generation (receipts, certificates)
-- [ ] Multi-language support
-- [ ] Backup and restore functionality
-
 ---
 
 **Built with ❤️ for Social Fraternity Association**
