@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import { parseCSV } from '@/utils/csvParser';
@@ -25,28 +26,35 @@ interface TransactionRecord {
   remarks?: string;
 }
 
+interface NormalizedRecord {
+  srNo: number;
+  payDate: string;
+  lobby: string;
+  sfaId: string;
+  name: string;
+  cmsId: string;
+  receiver: string;
+  amount: number;
+  paymentMode: string;
+  remarks: string;
+}
+
 const TransactionImport: React.FC = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
-  const [previewData, setPreviewData] = useState<Record<string>[]>([]);
+  const [previewData, setPreviewData] = useState<NormalizedRecord[]>([]);
   const [recordCount, setRecordCount] = useState(0);
   const [importSuccess, setImportSuccess] = useState<boolean | null>(null);
   const [importedCount, setImportedCount] = useState(0);
   
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
     
-    if (!file) {
-      setFileName(null);
-      setPreviewData([]);
-      setRecordCount(0);
-      return;
-    }
-    
-    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+    if (!file.name.endsWith('.csv')) {
       toast({
-        title: "Invalid file type",
+        title: "Invalid File",
         description: "Please select a CSV file",
         variant: "destructive"
       });
@@ -54,52 +62,66 @@ const TransactionImport: React.FC = () => {
     }
     
     setFileName(file.name);
+    setImportSuccess(null);
     
-    // Read and parse the CSV file
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const csvContent = event.target?.result as string;
-        
-        // Parse the CSV data
-        const parsedData = parseCSV(csvContent);
-        setRecordCount(parsedData.length);
-        
-        // Normalize field names for consistent usage
-        const normalizedData = parsedData.map(record => {
-          const normalizedRecord: Record<string> = {};
+    try {
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        try {
+          const csvContent = e.target?.result as string;
+          const parsedData = parseCSV(csvContent);
           
-          // Map CSV columns to our expected format
-          normalizedRecord.srno = record.srno || '';
-          normalizedRecord.payDate = record.paydate || '';
-          normalizedRecord.lobby = record.lobby || '';
-          normalizedRecord.sfaId = record['SFA-id'] || record.sfaId || '';
-          normalizedRecord.name = record.Name || record.name || '';
-          normalizedRecord.cmsId = record['CMS-id'] || record.cmsId || '';
-          normalizedRecord.receiver = record.reciever || record.receiver || '';
-          normalizedRecord.amount = record.amount || '';
-          normalizedRecord.paymentMode = record.payment_mode || record.paymentMode || '';
-          normalizedRecord.remarks = record.remarks || '';
+          // Normalize the data
+          const normalized = parsedData.map((record: TransactionRecord, index: number) => {
+            const amountStr = record.amount?.toString().replace(/[₹,]/g, '') || '0';
+            return {
+              srNo: parseInt(record.srno || '') || index + 1,
+              payDate: record.paydate || '',
+              lobby: record.lobby || '',
+              sfaId: record['SFA-id'] || record.sfaId || '',
+              name: record.Name || record.name || '',
+              cmsId: record['CMS-id'] || record.cmsId || '',
+              receiver: record.reciever || record.receiver || '',
+              amount: parseFloat(amountStr),
+              paymentMode: record.payment_mode || record.paymentMode || '',
+              remarks: record.remarks || ''
+            };
+          });
           
-          return normalizedRecord;
-        });
-        
-        // Show preview of first 5 rows
-        setPreviewData(normalizedData.slice(0, 5));
-        
-      } catch (error) {
-        console.error("Error parsing CSV:", error);
-        toast({
-          title: "Error parsing CSV",
-          description: "The CSV file could not be parsed correctly",
-          variant: "destructive"
-        });
-      }
-    };
-    
-    reader.readAsText(file);
+          // Filter valid records
+          const validRecords = normalized.filter((record: NormalizedRecord) => 
+            record.sfaId && record.payDate && record.lobby
+          );
+          
+          setPreviewData(validRecords.slice(0, 5));
+          setRecordCount(validRecords.length);
+          
+          toast({
+            title: "File Loaded",
+            description: `${validRecords.length} valid records found`
+          });
+        } catch (error) {
+          console.error("Parse error:", error);
+          toast({
+            title: "Parse Error",
+            description: "Failed to parse CSV file",
+            variant: "destructive"
+          });
+        }
+      };
+      
+      reader.readAsText(file);
+    } catch (error) {
+      console.error("File read error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to read file",
+        variant: "destructive"
+      });
+    }
   };
-  
+
   const handleImport = async () => {
     if (!fileName || previewData.length === 0) return;
     
