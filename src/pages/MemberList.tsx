@@ -99,10 +99,10 @@ const MemberList = () => {
       }
     };
 
-    if (isAuthenticated && isAdmin) {
+    if (isAuthenticated && isFounder) {
       fetchProtectedAdmins();
     }
-  }, [isAuthenticated, isFounder]);
+  }, [isAuthenticated, isFounder, toast]);
 
   // Fetch members from firestore
   useEffect(() => {
@@ -154,7 +154,7 @@ const MemberList = () => {
     };
 
     // ✅ Only fetch members after protected admins are loaded
-    if (isFounder && isAuthenticated && isAdmin && !isLoadingConfig) {
+    if (isFounder && isAuthenticated && !isLoadingConfig) {
       fetchMembers();
     }
   }, [isAuthenticated, isFounder, protectedAdmins, isLoadingConfig, toast]);

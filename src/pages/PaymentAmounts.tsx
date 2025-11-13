@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { firestore } from '@/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import {requireFounder} from '@/hooks/useAdminCheck';
+import {requireFounder} from '@/hooks/useFounderCheck';
 
 const PaymentAmounts = () => {  
   const { user, isAuthenticated, isLoading } = useAuth();

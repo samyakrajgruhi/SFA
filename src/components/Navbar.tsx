@@ -60,7 +60,7 @@ const Navbar = () => {
                 <Link to="/announcements" className="text-text-secondary hover:text-primary transition-colors duration-200 font-medium">
                   Announcements
                 </Link>
-                {isAuthenticated && user?.isAdmin && (
+                {isAuthenticated && (user?.isAdmin || user?.isFounder) && (
                   <>
                     <Link 
                       to="/admin" 
@@ -134,7 +134,7 @@ const Navbar = () => {
                     </Link>
                   )}
 
-                  {isAuthenticated && user?.isAdmin && (
+                  {isAuthenticated && (user?.isAdmin || user?.isFounder) && (
                     <>
                       <Link 
                         to="/admin" 
