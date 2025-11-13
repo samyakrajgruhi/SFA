@@ -1,4 +1,12 @@
-export const exportCollectionMembersToCSV = (members: []) => {
+interface CollectionMember {
+  full_name?: string;
+  sfa_id?: string;
+  cms_id?: string;
+  lobby_id?: string;
+  qrCodeUrl?: string;
+}
+
+export const exportCollectionMembersToCSV = (members: CollectionMember[]) => {
   // Define CSV headers
   const headers = [
     'Name',
