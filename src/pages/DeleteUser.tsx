@@ -45,7 +45,7 @@ interface UserInfo {
 }
 
 
-const DeleteUser = () => {
+const DisableUser = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -59,7 +59,7 @@ const DeleteUser = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [foundUser, setFoundUser] = useState<UserInfo | null>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDisableDialog, setShowDisableDialog] = useState(false);
   const [protectedAdmins, setProtectedAdmins] = useState<string[]>([]);
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
 
@@ -179,16 +179,16 @@ const DeleteUser = () => {
     }
 };
 
-  const handleDeleteUser = async () => {
+  const handleDisableUser = async () => {
     if (!foundUser) return;
 
-    // Check if user is protected or trying to delete self
+    // Check if user is protected or trying to Disable self
     if (foundUser.isProtected || foundUser.sfa_id === user?.sfaId) {
       toast({
-        title: 'Cannot Delete',
+        title: 'Cannot Disable',
         description: foundUser.isProtected 
-          ? 'This user is a protected admin and cannot be deleted'
-          : 'You cannot delete your own account',
+          ? 'This user is a protected admin and cannot be Disabled'
+          : 'You cannot Disable your own account',
         variant: 'destructive'
       });
       return;
@@ -216,19 +216,19 @@ const DeleteUser = () => {
       
       toast({
         title: 'Success',
-        description: `User ${foundUser.full_name} has been deleted successfully`,
+        description: `User ${foundUser.full_name} has been Disabled successfully`,
       });
 
       // Reset form
       setFoundUser(null);
       setSearchId('');
-      setShowDeleteDialog(false);
+      setShowDisableDialog(false);
 
     } catch (error) {
       console.error('Error deleting user:', error);
       toast({
         title: 'Error',
-        description: 'Failed to delete user. Please try again.',
+        description: 'Failed to Disable user. Please try again.',
         variant: 'destructive'
       });
     } finally {
@@ -269,7 +269,7 @@ const DeleteUser = () => {
             <div className="flex justify-center mb-4">
               <UserX className="w-16 h-16 text-destructive" />
             </div>
-            <h1 className="text-4xl font-bold text-text-primary mb-4">Delete User</h1>
+            <h1 className="text-4xl font-bold text-text-primary mb-4">Disable User</h1>
             <p className="text-lg text-text-secondary">Remove a user account from the system</p>
             <div className="mt-4 p-4 bg-warning-light border border-warning rounded-dashboard">
               <p className="text-warning font-medium">
@@ -282,7 +282,7 @@ const DeleteUser = () => {
           <Card className="p-6 mb-6">
             <CardHeader>
               <CardTitle>Search User</CardTitle>
-              <CardDescription>Enter the SFA ID or CMS ID of the user you want to delete</CardDescription>
+              <CardDescription>Enter the SFA ID or CMS ID of the user you want to Disable</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex gap-4">
@@ -389,7 +389,7 @@ const DeleteUser = () => {
                     <div>
                       <p className="font-semibold text-warning">Protected Admin</p>
                       <p className="text-sm text-text-secondary mt-1">
-                        This user is marked as a protected admin in the system configuration and cannot be deleted.
+                        This user is marked as a protected admin in the system configuration and cannot be Disabled.
                       </p>
                     </div>
                   </div>
@@ -398,7 +398,7 @@ const DeleteUser = () => {
                 <div className="flex justify-end">
                   <Button 
                     variant="destructive"
-                    onClick={() => setShowDeleteDialog(true)}
+                    onClick={() => setShowDisableDialog(true)}
                     disabled={foundUser.isProtected || foundUser.sfa_id === user?.sfaId || foundUser.isDisabled}
                     className="flex items-center gap-2"
                   >
@@ -417,8 +417,8 @@ const DeleteUser = () => {
             </Card>
           )}
 
-          {/* Delete Confirmation Dialog */}
-          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          {/* Disable Confirmation Dialog */}
+          <AlertDialog open={showDisableDialog} onOpenChange={setShowDisableDialog}>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle className="flex items-center gap-2">
@@ -440,7 +440,7 @@ const DeleteUser = () => {
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={handleDeleteUser}
+                  onClick={handleDisableUser}
                   disabled={isDeleting}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
@@ -462,4 +462,4 @@ const DeleteUser = () => {
   );
 };
 
-export default DeleteUser;
+export default DisableUser;
