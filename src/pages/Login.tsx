@@ -1,31 +1,31 @@
 import { useState, useEffect } from "react";
-import {useLobbies} from '@/hooks/useLobbies';
+import { useLobbies } from '@/hooks/useLobbies';
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, ArrowLeft, Plus, Trash2, AlertCircle, CheckCircle } from "lucide-react";
+import { User, UserPlus, Eye, ArrowLeft, Plus, Trash2, AlertCircle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { auth,firestore } from "@/firebase";
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
+import { auth, firestore } from "@/firebase";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   sendPasswordResetEmail,
   setPersistence,
   browserSessionPersistence
 } from "firebase/auth";
 
-import { setDoc,doc,getDoc, collection, query, where, getDocs} from "firebase/firestore";
+import { setDoc, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { generateAndReserveSfaId} from '@/utils/generateSfaId';
-import { 
-  validatePhoneNumber, 
-  validatePfNumber, 
+import { generateAndReserveSfaId } from '@/utils/generateSfaId';
+import {
+  validatePhoneNumber,
+  validatePfNumber,
   validatePassword,
-  getPasswordStrength 
+  getPasswordStrength
 } from '@/utils/validators';
 
-interface Nominee{
+interface Nominee {
   name: string;
   relationship: string;
   phoneNumber: string;
@@ -33,7 +33,7 @@ interface Nominee{
 }
 
 const Login = () => {
-  const {toast} = useToast();
+  const { toast } = useToast();
   const { lobbies, isLoading: isLoadingLobbies } = useLobbies();
 
   const [isLogin, setIsLogin] = useState(true);
@@ -58,20 +58,26 @@ const Login = () => {
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
   // const [autoGenerateSfaId, setAutoGenerateSfaId] = useState(false);
-  const [designation,setDesignation] = useState("");
-  const [dateOfBirth,setDateOfBirth] = useState("");
+  const [designation, setDesignation] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [bloodGroup, setBloodGroup] = useState("");
   const [presentStatus, setPresentStatus] = useState("");
   const [pfNumber, setPfNumber] = useState("");
   const [nominees, setNominees] = useState<Nominee[]>([
-    { name: "",
+    {
+      name: "",
       relationship: "",
       phoneNumber: "",
       sharePercentage: 0,
     }
   ]);
 
-  // ✅ ONLY 3 Validation states
+  // States for Registration Options : New Member, Old Member
+  const [registrationStep, setRegistrationStep] = useState<'select' | 'form'>('select');
+  const [memberType, setMemberType] = useState<'new' | 'old' | null>(null);
+
+
+  // 3 Validation states
   const [phoneValid, setPhoneValid] = useState(false);
   const [pfValid, setPfValid] = useState(false);
   const [passwordValid, setPasswordValid] = useState(false);
@@ -80,7 +86,7 @@ const Login = () => {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [isCheckingRegistration, setIsCheckingRegistration] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Password Reset functionality
   const [resetEmail, setResetEmail] = useState("");
   const [showResetForm, setShowResetForm] = useState(false);
@@ -90,13 +96,13 @@ const Login = () => {
 
   useEffect(() => {
     const checkRegistrationStatus = async () => {
-      try{
-        const configDoc = await getDoc(doc(firestore, 'config','registration'));
-        if(configDoc.exists()) {
+      try {
+        const configDoc = await getDoc(doc(firestore, 'config', 'registration'));
+        if (configDoc.exists()) {
           setIsRegistrationOpen(configDoc.data().isOpen || false);
         }
-      } catch(error) {
-        console.error('Error checking registration status:',error);
+      } catch (error) {
+        console.error('Error checking registration status:', error);
       } finally {
         setIsCheckingRegistration(false);
       }
@@ -115,11 +121,11 @@ const Login = () => {
     'CLI'
   ];
 
-  const bloodGroups = ['A+','A-','B+','B-','AB+','AB-','O+','O-'];
-  const presentStatuses = ['Working','On Leave','Other'];
+  const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+  const presentStatuses = ['Working', 'On Leave', 'Other'];
 
   const addNominee = () => {
-    setNominees([...nominees,{
+    setNominees([...nominees, {
       name: "",
       relationship: "",
       phoneNumber: "",
@@ -128,19 +134,19 @@ const Login = () => {
   };
 
   const removeNominee = (index: number) => {
-    if(nominees.length > 1) {
-      setNominees(nominees.filter((_,i) => i !== index));
+    if (nominees.length > 1) {
+      setNominees(nominees.filter((_, i) => i !== index));
     }
   };
 
-  const updateNominee = (index: number, field: keyof Nominee, value: string | number ) => {
+  const updateNominee = (index: number, field: keyof Nominee, value: string | number) => {
     const updated = [...nominees];
-    updated[index] = {...updated[index], [field]: value };
+    updated[index] = { ...updated[index], [field]: value };
     setNominees(updated);
   };
 
   const getTotalSharePercentage = () => {
-    return nominees.reduce((sum,nominee) => sum + (nominee.sharePercentage || 0), 0);
+    return nominees.reduce((sum, nominee) => sum + (nominee.sharePercentage || 0), 0);
   };
 
   // ✅ 1. Phone Number Validation
@@ -148,7 +154,7 @@ const Login = () => {
     const cleaned = value.replace(/\D/g, '');
     const limited = cleaned.slice(0, 10);
     setPhoneNo(limited);
-    
+
     const validation = validatePhoneNumber(limited);
     setPhoneValid(validation.isValid);
   };
@@ -168,7 +174,7 @@ const Login = () => {
     const alphanumeric = cleaned.replace(/[^A-Za-z0-9]/g, '');
     const limited = alphanumeric.slice(0, 11);
     setPfNumber(limited);
-    
+
     const validation = validatePfNumber(limited);
     setPfValid(validation.isValid);
   };
@@ -176,10 +182,10 @@ const Login = () => {
   // ✅ 3. Password Validation
   const handlePasswordChange = (value: string) => {
     setRegPassword(value);
-    
+
     const validation = validatePassword(value);
     setPasswordValid(validation.isValid);
-    
+
     const strength = getPasswordStrength(value);
     setPasswordStrength(strength.strength);
   };
@@ -192,30 +198,30 @@ const Login = () => {
 
     // Remove spaces for validation
     const cleanedSfaId = sfaId.replace(/\s/g, '').toUpperCase();
-    
+
     // Check if it starts with SFA (case-insensitive)
     if (!cleanedSfaId.startsWith('SFA')) {
       return { isValid: false, error: 'SFA ID must start with "SFA"' };
     }
-    
+
     // Extract the number part after "SFA"
     const numberPart = cleanedSfaId.substring(3);
-    
+
     // Check if there's a number part
     if (numberPart.length === 0) {
       return { isValid: false, error: 'SFA ID must include a number (e.g., SFA1001)' };
     }
-    
+
     // Check if number part contains only digits
     if (!/^\d+$/.test(numberPart)) {
       return { isValid: false, error: 'SFA ID must be in format: SFA followed by numbers only (e.g., SFA1001)' };
     }
-    
+
     // Check minimum length (SFA + at least 1 digit = minimum 4 characters)
     if (cleanedSfaId.length < 3) {
       return { isValid: false, error: 'SFA ID must be at least 4 characters (e.g., SFA1 or SFA1001)' };
     }
-    
+
     return { isValid: true };
   };
 
@@ -223,39 +229,39 @@ const Login = () => {
     if (!lobbyId) {
       return { isValid: false, error: 'Please select a lobby first' };
     }
-    
+
     // Check for spaces
     if (/\s/.test(cmsId)) {
       return { isValid: false, error: 'CMS ID cannot contain spaces' };
     }
-    
+
     // Check if CMS ID starts with the lobby prefix
     if (!cmsId.startsWith(lobbyId)) {
       return { isValid: false, error: `CMS ID must start with "${lobbyId}"` };
     }
-    
+
     // Check if there are digits after the lobby prefix
     const numberPart = cmsId.substring(lobbyId.length);
     if (numberPart.length === 0) {
       return { isValid: false, error: 'CMS ID must include a number after lobby code' };
     }
-    
+
     if (!/^\d+$/.test(numberPart)) {
       return { isValid: false, error: 'CMS ID must end with numbers only' };
     }
-    
+
     if (cmsId.length < lobbyId.length + 3) {
       return { isValid: false, error: `CMS ID must be at least ${lobbyId.length + 3} characters (e.g., ${lobbyId}1234)` };
     }
-    
+
     return { isValid: true };
   };
 
   // ✅ Check if form is valid
   const isFormValid = () => {
-    // Check required fields
-    if (!fullName || !regEmail || !lobbyId || !cmsId || !designation || 
-        !dateOfBirth || !bloodGroup || !presentStatus || !regConfirmPassword || !sfaId) {
+    // Check required fields (SFA ID not required for new members)
+    if (!fullName || !regEmail || !lobbyId || !cmsId || !designation ||
+      !dateOfBirth || !bloodGroup || !presentStatus || !regConfirmPassword) {
       return false;
     }
 
@@ -264,14 +270,15 @@ const Login = () => {
       return false;
     }
 
-    // Check SFA ID
-    if (!sfaId) {
-      return false;
-    }
-
-    // ✅ Check SFA ID format if not auto-generating
-    if (!sfaIdValid) {
-      return false;
+    // Check SFA ID only for old members
+    if (memberType === 'old') {
+      if (!sfaId) {
+        return false;
+      }
+      // ✅ Check SFA ID format for old members
+      if (!sfaIdValid) {
+        return false;
+      }
     }
 
     // Check 3 validators
@@ -291,7 +298,7 @@ const Login = () => {
     }
 
     // Nominee validation
-    const nomineeValid = nominees.every(nominee => 
+    const nomineeValid = nominees.every(nominee =>
       nominee.name.trim() !== '' &&
       nominee.relationship.trim() !== '' &&
       nominee.phoneNumber.trim() !== '' &&
@@ -308,29 +315,29 @@ const Login = () => {
   const handleLobbyChange = (value: string) => {
     const oldLobby = lobbyId;
     setLobbyId(value);
-    
+
     // If CMS ID was already entered, update it with new lobby prefix
     if (cmsId && oldLobby) {
       const numberPart = cmsId.substring(oldLobby.length);
       const newCmsId = value + numberPart;
       setCmsId(newCmsId);
-      
+
       const validation = validateCmsIdFormat(newCmsId, value);
       setCmsIdValid(validation.isValid);
     }
   };
 
   // Update handleSfaIdChange function (around line 283)
-  
+
   const handleSfaIdChange = (value: string) => {
     // Remove all spaces and convert to uppercase
     const cleanedValue = value.replace(/\s/g, '').toUpperCase();
     setSfaId(cleanedValue);
-    
+
     // Always validate when user types
     const validation = validateSfaIdFormat(cleanedValue);
     setSfaIdValid(validation.isValid);
-    
+
     // Show validation error in console for debugging
     if (!validation.isValid && cleanedValue.length > 0) {
       console.log('SFA ID Validation:', validation.error);
@@ -347,22 +354,22 @@ const Login = () => {
       });
       return;
     }
-    
+
     // Remove all spaces and convert to uppercase
     let processedValue = value.replace(/\s/g, '').toUpperCase();
-    
+
     // If user tries to type the lobby prefix, remove it (we'll add it automatically)
     if (processedValue.startsWith(lobbyId)) {
       processedValue = processedValue.substring(lobbyId.length);
     }
-    
+
     // Only allow numbers
     const numbersOnly = processedValue.replace(/\D/g, '');
-    
+
     // Construct full CMS ID with lobby prefix
     const fullCmsId = lobbyId + numbersOnly;
     setCmsId(fullCmsId);
-    
+
     const validation = validateCmsIdFormat(fullCmsId, lobbyId);
     setCmsIdValid(validation.isValid);
   };
@@ -388,19 +395,22 @@ const Login = () => {
     setPhoneValid(false);
     setPfValid(false);
     setPasswordValid(false);
-    setSfaIdValid(false);  // ✅ Add this
+    setSfaIdValid(false);
     setCmsIdValid(false);
+    // Reset registration flow
+    setRegistrationStep('select');
+    setMemberType(null);
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Prevent multiple submissions
     if (isSubmitting) {
       return;
     }
-    
-    if(!isLogin){
+
+    if (!isLogin) {
       // ✅ Final validation check
       if (!isFormValid()) {
         toast({
@@ -411,18 +421,18 @@ const Login = () => {
         return;
       }
 
-      // ✅ Additional format validation for SFA and CMS IDs
-      
-      const sfaValidation = validateSfaIdFormat(sfaId);
-      if (!sfaValidation.isValid) {
-        toast({
-          title: "Invalid SFA ID",
-          description: sfaValidation.error,
-          variant: "destructive"
-        });
-        return;
+      // ✅ Additional format validation for SFA ID (only for old members)
+      if (memberType === 'old') {
+        const sfaValidation = validateSfaIdFormat(sfaId);
+        if (!sfaValidation.isValid) {
+          toast({
+            title: "Invalid SFA ID",
+            description: sfaValidation.error,
+            variant: "destructive"
+          });
+          return;
+        }
       }
-      
 
       const cmsValidation = validateCmsIdFormat(cmsId, lobbyId);
       if (!cmsValidation.isValid) {
@@ -451,50 +461,77 @@ const Login = () => {
       } catch (error) {
         console.error('Error checking PF Number:', error);
       }
-      
+
       try {
         const userCredentials = await createUserWithEmailAndPassword(auth, regEmail, regPassword);
         const user = userCredentials.user;
 
-        const finalSfaId = sfaId;
-
-        try {
-          const existingDoc = await getDoc(doc(firestore, "users", finalSfaId));
-          if (existingDoc.exists()) {
+        // Generate or use existing SFA ID based on member type
+        let finalSfaId: string;
+        
+        if (memberType === 'new') {
+          // Auto-generate SFA ID for new members
+          try {
+            finalSfaId = await generateAndReserveSfaId();
+            toast({
+              title: "SFA ID Generated",
+              description: `Your SFA ID is: ${finalSfaId}`,
+              duration: 5000
+            });
+          } catch (error) {
             await user.delete();
             toast({
-              title:"Error",
-              description: "This SFA ID already exists!",
+              title: "Error",
+              description: "Failed to generate SFA ID. Please try again.",
               variant: "destructive"
             });
+            setIsSubmitting(false);
             return;
           }
-        } catch (error) {
-          console.warn('Could not check SFA ID uniqueness:', error);
+        } else {
+          // Use manually entered SFA ID for old members
+          finalSfaId = sfaId;
+          
+          // Check if SFA ID already exists
+          try {
+            const existingDoc = await getDoc(doc(firestore, "users", finalSfaId));
+            if (existingDoc.exists()) {
+              await user.delete();
+              toast({
+                title: "Error",
+                description: "This SFA ID already exists!",
+                variant: "destructive"
+              });
+              setIsSubmitting(false);
+              return;
+            }
+          } catch (error) {
+            console.warn('Could not check SFA ID uniqueness:', error);
+          }
         }
-        
-        
+
+
         const userData = {
           full_name: fullName,
-          cms_id:cmsId,
-          sfa_id:finalSfaId,
-          lobby_id:lobbyId,
-          email:regEmail,
+          cms_id: cmsId,
+          sfa_id: finalSfaId,
+          lobby_id: lobbyId,
+          email: regEmail,
           isAdmin: false,
           isCollectionMember: false,
           phone_number: phoneNo,
           emergency_number: emergencyNo,
-          uid:user.uid,
+          uid: user.uid,
           designation: designation,
           date_of_birth: dateOfBirth,
           blood_group: bloodGroup,
           present_status: presentStatus,
           pf_number: pfNumber,
           nominees: nominees,
-          registration_date: new Date()          
+          registration_date: new Date()
         };
 
-        await setDoc(doc(firestore,"users",finalSfaId),userData);
+        await setDoc(doc(firestore, "users", finalSfaId), userData);
 
         await setDoc(doc(firestore, "users_by_uid", user.uid), {
           uid: user.uid,
@@ -516,17 +553,17 @@ const Login = () => {
         console.log("User registered Successfully!!");
         setIsLogin(true);
       }
-      catch(e){
+      catch (e) {
         toast({
           title: "Registration Failed",
           description: e.message || "Please try again with different information.",
           variant: "destructive",
         });
         setIsLogin(true);
-      }finally {
+      } finally {
         setIsSubmitting(false);
       }
-    }else {
+    } else {
       // Login flow
       setIsSubmitting(true);
       try {
@@ -535,18 +572,18 @@ const Login = () => {
           setIsSubmitting(false);
           return;
         }
-        
+
         await setPersistence(auth, browserSessionPersistence);
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        
+
         // ✅ Check if user is disabled
         const usersRef = collection(firestore, 'users');
         const q = query(usersRef, where('uid', '==', userCredential.user.uid));
         const querySnapshot = await getDocs(q);
-        
+
         if (!querySnapshot.empty) {
           const userData = querySnapshot.docs[0].data();
-          
+
           if (userData.isDisabled) {
             // Sign out immediately
             await auth.signOut();
@@ -559,7 +596,7 @@ const Login = () => {
             return;
           }
         }
-        
+
         console.log("Successfully logged in.");
         navigate("/");
       } catch (e) {
@@ -579,8 +616,8 @@ const Login = () => {
       <div className="w-full max-w-md">
         {/* Back to Home Link */}
         <div className="mb-8">
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className="inline-flex items-center gap-2 text-text-secondary hover:text-primary transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -596,11 +633,10 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => setIsLogin(true)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isLogin
-                    ? "bg-primary text-white shadow"
-                    : "text-text-secondary hover:bg-primary/10"
-                }`}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${isLogin
+                  ? "bg-primary text-white shadow"
+                  : "text-text-secondary hover:bg-primary/10"
+                  }`}
               >
                 Login
               </button>
@@ -608,11 +644,10 @@ const Login = () => {
                 type="button"
                 onClick={() => setIsLogin(false)}
                 disabled={!isRegistrationOpen}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  !isLogin
-                    ? "bg-primary text-white shadow"
-                    : "text-text-secondary hover:bg-primary/10"
-                } ${!isRegistrationOpen ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${!isLogin
+                  ? "bg-primary text-white shadow"
+                  : "text-text-secondary hover:bg-primary/10"
+                  } ${!isRegistrationOpen ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 Register
               </button>
@@ -631,9 +666,9 @@ const Login = () => {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <img 
-                src="/SFA-updateLogo.png" 
-                alt="SFA Logo" 
+              <img
+                src="/SFA-updateLogo.png"
+                alt="SFA Logo"
                 className="w-10 h-10 object-contain"
               />
             </div>
@@ -644,6 +679,76 @@ const Login = () => {
               {isLogin ? "Sign in to your SFA account" : "Join the SFA community"}
             </p>
           </div>
+
+          {/* Member Type Selection - Show when not login and registration is open */}
+          {!isLogin && isRegistrationOpen && registrationStep === 'select' && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="text-center">
+                <h3 className="text-xl font-semibold text-text-primary mb-2">
+                  Choose Registration Type
+                </h3>
+                <p className="text-sm text-text-secondary">
+                  Select the option that applies to you
+                </p>
+              </div>
+
+              <div className="grid gap-4">
+                {/* Old Member Card */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMemberType('old');
+                    setRegistrationStep('form');
+                  }}
+                  className="group p-6 bg-surface border-2 border-border hover:border-primary rounded-lg transition-all hover:shadow-lg text-left"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-primary-light rounded-lg group-hover:bg-primary group-hover:text-white transition-colors">
+                      <User className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-text-primary mb-1">
+                        Old Member Registration
+                      </h4>
+                      <p className="text-sm text-text-secondary">
+                        I already have an SFA ID from previous registration
+                      </p>
+                      <p className="text-xs text-text-muted mt-2">
+                        You will need to enter your existing SFA ID
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* New Member Card */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMemberType('new');
+                    setRegistrationStep('form');
+                  }}
+                  className="group p-6 bg-surface border-2 border-border hover:border-success rounded-lg transition-all hover:shadow-lg text-left"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-success-light rounded-lg group-hover:bg-success group-hover:text-white transition-colors">
+                      <UserPlus className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-text-primary mb-1">
+                        New Member Registration
+                      </h4>
+                      <p className="text-sm text-text-secondary">
+                        I'm registering for the first time
+                      </p>
+                      <p className="text-xs text-text-muted mt-2">
+                        An SFA ID will be automatically generated for you
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* LOGIN FORM */}
           {isLogin ? (
@@ -688,7 +793,7 @@ const Login = () => {
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
+                  <Checkbox
                     checked={rememberMe}
                     onCheckedChange={checked => setRememberMe(checked === true)}
                     id="rememberMe"
@@ -697,16 +802,16 @@ const Login = () => {
                     Remember me
                   </label>
                 </div>
-                <Link 
-                  to="/forgot-password" 
+                <Link
+                  to="/forgot-password"
                   className="text-sm text-primary hover:text-primary/80 transition-colors"
                 >
                   Forgot Password?
                 </Link>
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full h-11 text-base font-medium"
                 disabled={isSubmitting}
               >
@@ -720,270 +825,300 @@ const Login = () => {
                 )}
               </Button>
             </form>
-          ) : isRegistrationOpen ? (
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              {/* Full Name */}
-              <div>
-                <label className="block text-sm font-medium mb-1" htmlFor="fullName">
-                  Full Name <span className="text-red-600">*</span>
-                </label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  required
-                  placeholder="Enter your full name"
-                  className="h-11"
-                  value={fullName}
-                  onChange={e => setFullName(e.target.value)}
-                />
-              </div>
-
-              {/* Designation */}
-              <div>
-                <label className="block text-sm font-medium mb-1" htmlFor="designation">
-                  Designation <span className="text-red-600">*</span>
-                </label>
-                <Select value={designation} onValueChange={setDesignation} required>
-                  <SelectTrigger className="w-full h-11">
-                    <SelectValue placeholder="Select your designation" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-surface border border-border z-50">
-                    {designations.map((des) => (
-                      <SelectItem key={des} value={des} className="hover:bg-surface-hover">
-                        {des}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Date of Birth */}
-              <div>
-                <label className="block text-sm font-medium mb-1" htmlFor="dateOfBirth">
-                  Date of Birth <span className="text-red-600">*</span>
-                </label>
-                <Input
-                  id="dateOfBirth"
-                  type="date"
-                  required
-                  className="h-11"
-                  value={dateOfBirth}
-                  onChange={e => setDateOfBirth(e.target.value)}
-                />
-              </div>
-
-              {/* Blood Group */}
-              <div>
-                <label className="block text-sm font-medium mb-1" htmlFor="bloodGroup">
-                  Blood Group <span className="text-red-600">*</span>
-                </label>
-                <Select value={bloodGroup} onValueChange={setBloodGroup} required>
-                  <SelectTrigger className="w-full h-11">
-                    <SelectValue placeholder="Select your blood group" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-surface border border-border z-50">
-                    {bloodGroups.map((bg) => (
-                      <SelectItem key={bg} value={bg} className="hover:bg-surface-hover">
-                        {bg}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* ✅ 1. PF Number - 11 digits */}
-              <div>
-                <label className="block text-sm font-medium mb-1" htmlFor="pfNumber">
-                  PF Number (11 characters) <span className="text-red-600">*</span>
-                </label>
-                <Input
-                  id="pfNumber"
-                  type="text"
-                  required
-                  placeholder="Enter 11-character PF number (e.g., PF12345A6789)"
-                  className={`h-11 ${pfNumber && (pfValid ? 'border-success' : 'border-destructive')}`}
-                  value={pfNumber}
-                  onChange={e => handlePfNumberChange(e.target.value)}
-                  maxLength={11}
-                  // ✅ Removed textTransform: 'uppercase' to allow both cases
-                />
-                <p className="text-xs text-text-muted mt-1 flex items-center justify-between">
-                  <span>{pfNumber.length}/11 characters</span>
-                  {pfNumber.length === 11 && (
-                    pfValid ? (
-                      <span className="text-success flex items-center gap-1">
-                        <CheckCircle className="w-3 h-3" /> Valid
-                      </span>
-                    ) : (
-                      <span className="text-destructive flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> Invalid
-                      </span>
-                    )
-                  )}
-                </p>
-                {pfNumber && pfNumber.length === 11 && !pfValid && (
-                  <p className="text-xs text-destructive mt-1">
-                    PF number must be exactly 11 alphanumeric characters
-                  </p>
-                )}
-              </div>
-
-              {/* Present Status */}
-              <div>
-                <label className="block text-sm font-medium mb-1" htmlFor="presentStatus">
-                  Present Status <span className="text-red-600">*</span>
-                </label>
-                <Select value={presentStatus} onValueChange={setPresentStatus} required>
-                  <SelectTrigger className="w-full h-11">
-                    <SelectValue placeholder="Select your present status" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-surface border border-border z-50">
-                    {presentStatuses.map((status) => (
-                      <SelectItem key={status} value={status} className="hover:bg-surface-hover">
-                        {status}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-medium mb-1" htmlFor="regEmail">
-                  Email Address <span className="text-red-600">*</span>
-                </label>
-                <Input
-                  id="regEmail"
-                  type="email"
-                  required
-                  placeholder="Enter your email"
-                  className="h-11"
-                  value={regEmail}
-                  onChange={e => setRegEmail(e.target.value)}
-                />
-              </div>
-
-              {/* Lobby */}
-              <div>
-                <label className="block text-sm font-medium mb-1" htmlFor="lobbyId">
-                  Lobby <span className="text-red-600">*</span>
-                </label>
-                <Select 
-                  value={lobbyId} 
-                  onValueChange={handleLobbyChange} 
-                  disabled={isLoadingLobbies} 
-                  required
+          ) : isRegistrationOpen && registrationStep === 'form' ? (
+            <>
+              {/* Back Button */}
+              {memberType && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setRegistrationStep('select');
+                    setMemberType(null);
+                    setSfaId('');
+                  }}
+                  className="mb-4"
                 >
-                  <SelectTrigger className="w-full h-11">
-                    <SelectValue placeholder={isLoadingLobbies ? "Loading lobbies..." : "Select your lobby first"} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-surface border border-border z-50">
-                    {lobbies.map((lobby) => (
-                      <SelectItem key={lobby} value={lobby} className="hover:bg-surface-hover">
-                        {lobby}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Registration Type
+                </Button>
+              )}
 
-              <div>
-                <label className="block text-sm font-medium mb-1" htmlFor="cmsId">
-                  CMS ID <span className="text-red-600">*</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary font-medium">
-                    {lobbyId || 'LOBBY'}
-                  </div>
-                  <Input
-                    id="cmsId"
-                    type="text"
-                    required
-                    placeholder={lobbyId ? "Enter number (e.g., 1234)" : "Select lobby first"}
-                    className={`h-11 pl-20 ${cmsId && (cmsIdValid ? 'border-success' : 'border-destructive')}`}
-                    value={cmsId.substring(lobbyId.length)}
-                    onChange={e => handleCmsIdChange(e.target.value)}
-                    disabled={!lobbyId}
-                    maxLength={6}
-                  />
-                </div>
-                {lobbyId && (
-                  <p className="text-xs text-text-muted mt-1">
-                    Your CMS ID will be: <span className="font-semibold text-primary">{cmsId || `${lobbyId}____`}</span>
+              <form className="space-y-6" onSubmit={handleSubmit}>
+                {/* Form Header */}
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-bold text-text-primary mb-2">
+                    {memberType === 'old' ? 'Old Member Registration' : 'New Member Registration'}
+                  </h2>
+                  <p className="text-text-secondary text-sm">
+                    {memberType === 'old'
+                      ? 'Complete your registration with your existing SFA ID'
+                      : 'We\'ll create a new SFA ID for you'
+                    }
                   </p>
-                )}
-                {!lobbyId && (
-                  <p className="text-xs text-warning mt-1">
-                    ⚠️ Please select your lobby first
-                  </p>
-                )}
-                {cmsId && lobbyId && !cmsIdValid && (
-                  <div className="mt-1 flex items-center gap-1 text-xs text-destructive">
-                    <AlertCircle className="w-3 h-3" />
-                    <span>Enter at least 3 digits after {lobbyId}</span>
-                  </div>
-                )}
-                {cmsId && cmsIdValid && (
-                  <div className="mt-1 flex items-center gap-1 text-xs text-success">
-                    <CheckCircle className="w-3 h-3" />
-                    <span>Valid CMS ID format</span>
-                  </div>
-                )}
-              </div>
-
-              {/* SFA ID */}
-              <div>
-                <label className="block text-sm font-medium mb-1" htmlFor="sfaId">
-                  SFA ID <span className="text-red-600">*</span>
-                </label>
-                {/* 
-                <div className="flex items-center gap-2 mb-2">
-                  <Checkbox
-                    id="autoGenerate"
-                    checked={autoGenerateSfaId}
-                    onCheckedChange={(checked)=>{
-                      setAutoGenerateSfaId(checked as boolean);
-                      if (checked) setSfaId('');
-                    }}
-                  />
-                  <label htmlFor="autoGenerate" className="text-sm text-text-secondary cursor-pointer">
-                    Auto-generate SFA ID (for new members)
-                  </label>
                 </div>
-                */}
+                  {/* Full Name */}
                   <div>
-                  <Input
-                    id="sfaId"
-                    type="text"
-                    placeholder="Enter your SFA ID (e.g., SFA1001)"
-                    className={`h-11 ${
-                      sfaId && sfaId.length > 0
-                        ? sfaIdValid 
-                          ? 'border-success focus:border-success' 
-                          : 'border-destructive focus:border-destructive'
-                        : ''
-                    }`}
-                    value={sfaId}
-                    onChange={e => handleSfaIdChange(e.target.value)}
-                    style={{ textTransform: 'uppercase' }}
-                    required
-                  />
-                  {sfaId && !sfaIdValid && (
-                    <div className="mt-1 flex items-center gap-1 text-xs text-destructive">
-                      <AlertCircle className="w-3 h-3" />
-                      <span>Format: SFA followed by numbers (e.g., SFA1, SFA1001, SFA12345)</span>
-                    </div>
-                  )}
-                  {sfaId && sfaIdValid && (
-                    <div className="mt-1 flex items-center gap-1 text-xs text-success">
-                      <CheckCircle className="w-3 h-3" />
-                      <span>Valid SFA ID format ✓</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+                    <label className="block text-sm font-medium mb-1" htmlFor="fullName">
+                      Full Name <span className="text-red-600">*</span>
+                    </label>
+                    <Input
+                      id="fullName"
+                      type="text"
+                      required
+                      placeholder="Enter your full name"
+                      className="h-11"
+                      value={fullName}
+                      onChange={e => setFullName(e.target.value)}
+                    />
+                  </div>
 
-              {/* ✅ 2. Phone Number - 10 digits */}
+                  {/* Designation */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" htmlFor="designation">
+                      Designation <span className="text-red-600">*</span>
+                    </label>
+                    <Select value={designation} onValueChange={setDesignation} required>
+                      <SelectTrigger className="w-full h-11">
+                        <SelectValue placeholder="Select your designation" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-surface border border-border z-50">
+                        {designations.map((des) => (
+                          <SelectItem key={des} value={des} className="hover:bg-surface-hover">
+                            {des}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Date of Birth */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" htmlFor="dateOfBirth">
+                      Date of Birth <span className="text-red-600">*</span>
+                    </label>
+                    <Input
+                      id="dateOfBirth"
+                      type="date"
+                      required
+                      className="h-11"
+                      value={dateOfBirth}
+                      onChange={e => setDateOfBirth(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Blood Group */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" htmlFor="bloodGroup">
+                      Blood Group <span className="text-red-600">*</span>
+                    </label>
+                    <Select value={bloodGroup} onValueChange={setBloodGroup} required>
+                      <SelectTrigger className="w-full h-11">
+                        <SelectValue placeholder="Select your blood group" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-surface border border-border z-50">
+                        {bloodGroups.map((bg) => (
+                          <SelectItem key={bg} value={bg} className="hover:bg-surface-hover">
+                            {bg}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/*1. PF Number - 11 digits */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" htmlFor="pfNumber">
+                      PF Number (11 characters) <span className="text-red-600">*</span>
+                    </label>
+                    <Input
+                      id="pfNumber"
+                      type="text"
+                      required
+                      placeholder="Enter 11-character PF number (e.g., PF12345A6789)"
+                      className={`h-11 ${pfNumber && (pfValid ? 'border-success' : 'border-destructive')}`}
+                      value={pfNumber}
+                      onChange={e => handlePfNumberChange(e.target.value)}
+                      maxLength={11}
+                      style={{ textTransform: 'uppercase' }}
+                    />
+                    <p className="text-xs text-text-muted mt-1 flex items-center justify-between">
+                      <span>{pfNumber.length}/11 characters</span>
+                      {pfNumber.length === 11 && (
+                        pfValid ? (
+                          <span className="text-success flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" /> Valid
+                          </span>
+                        ) : (
+                          <span className="text-destructive flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" /> Invalid
+                          </span>
+                        )
+                      )}
+                    </p>
+                    {pfNumber && pfNumber.length === 11 && !pfValid && (
+                      <p className="text-xs text-destructive mt-1">
+                        PF number must be exactly 11 alphanumeric characters
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Present Status */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" htmlFor="presentStatus">
+                      Present Status <span className="text-red-600">*</span>
+                    </label>
+                    <Select value={presentStatus} onValueChange={setPresentStatus} required>
+                      <SelectTrigger className="w-full h-11">
+                        <SelectValue placeholder="Select your present status" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-surface border border-border z-50">
+                        {presentStatuses.map((status) => (
+                          <SelectItem key={status} value={status} className="hover:bg-surface-hover">
+                            {status}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" htmlFor="regEmail">
+                      Email Address <span className="text-red-600">*</span>
+                    </label>
+                    <Input
+                      id="regEmail"
+                      type="email"
+                      required
+                      placeholder="Enter your email"
+                      className="h-11"
+                      value={regEmail}
+                      onChange={e => setRegEmail(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Lobby */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" htmlFor="lobbyId">
+                      Lobby <span className="text-red-600">*</span>
+                    </label>
+                    <Select
+                      value={lobbyId}
+                      onValueChange={handleLobbyChange}
+                      disabled={isLoadingLobbies}
+                      required
+                    >
+                      <SelectTrigger className="w-full h-11">
+                        <SelectValue placeholder={isLoadingLobbies ? "Loading lobbies..." : "Select your lobby first"} />
+                      </SelectTrigger>
+                      <SelectContent className="bg-surface border border-border z-50">
+                        {lobbies.map((lobby) => (
+                          <SelectItem key={lobby} value={lobby} className="hover:bg-surface-hover">
+                            {lobby}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1" htmlFor="cmsId">
+                      CMS ID <span className="text-red-600">*</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary font-medium">
+                        {lobbyId || 'LOBBY'}
+                      </div>
+                      <Input
+                        id="cmsId"
+                        type="text"
+                        required
+                        placeholder={lobbyId ? "Enter number (e.g., 1234)" : "Select lobby first"}
+                        className={`h-11 pl-20 ${cmsId && (cmsIdValid ? 'border-success' : 'border-destructive')}`}
+                        value={cmsId.substring(lobbyId.length)}
+                        onChange={e => handleCmsIdChange(e.target.value)}
+                        disabled={!lobbyId}
+                        maxLength={6}
+                      />
+                    </div>
+                    {lobbyId && (
+                      <p className="text-xs text-text-muted mt-1">
+                        Your CMS ID will be: <span className="font-semibold text-primary">{cmsId || `${lobbyId}____`}</span>
+                      </p>
+                    )}
+                    {!lobbyId && (
+                      <p className="text-xs text-warning mt-1">
+                        ⚠️ Please select your lobby first
+                      </p>
+                    )}
+                    {cmsId && lobbyId && !cmsIdValid && (
+                      <div className="mt-1 flex items-center gap-1 text-xs text-destructive">
+                        <AlertCircle className="w-3 h-3" />
+                        <span>Enter at least 3 digits after {lobbyId}</span>
+                      </div>
+                    )}
+                    {cmsId && cmsIdValid && (
+                      <div className="mt-1 flex items-center gap-1 text-xs text-success">
+                        <CheckCircle className="w-3 h-3" />
+                        <span>Valid CMS ID format</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* SFA ID - Conditional based on member type */}
+                  {memberType === 'old' ? (
+                    // Old Member - Manual Entry
+                    <div>
+                      <label className="block text-sm font-medium mb-1" htmlFor="sfaId">
+                        SFA ID <span className="text-red-600">*</span>
+                      </label>
+                      <Input
+                        id="sfaId"
+                        type="text"
+                        required
+                        placeholder="Enter your existing SFA ID (e.g., SFA1001)"
+                        className={`h-11 ${sfaId && (sfaIdValid ? 'border-success' : 'border-destructive')}`}
+                        value={sfaId}
+                        onChange={e => handleSfaIdChange(e.target.value)}
+                      />
+                      <p className="text-xs text-text-muted mt-1">
+                        Enter the SFA ID you received during your previous registration
+                      </p>
+                      {sfaId && (
+                        <p className="text-xs mt-1">
+                          {validateSfaIdFormat(sfaId).isValid ? (
+                            <span className="text-success flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3" /> Valid format
+                            </span>
+                          ) : (
+                            <span className="text-destructive flex items-center gap-1">
+                              <AlertCircle className="w-3 h-3" /> Invalid format
+                            </span>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  ) : memberType === 'new' ? (
+                    // New Member - Auto-generate message
+                    <div className="p-4 bg-success-light border border-success rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-success rounded-lg">
+                          <CheckCircle className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-success mb-1">
+                            SFA ID Will Be Auto-Generated
+                          </h4>
+                          <p className="text-sm text-text-secondary">
+                            Your unique SFA ID will be automatically created after successful registration.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* 2. Phone Number - 10 digits */}
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="phoneNo">
                   Contact Number (10 digits) <span className="text-red-600">*</span>
@@ -1123,7 +1258,7 @@ const Login = () => {
                     <Eye className="w-4 h-4" />
                   </button>
                 </div>
-                
+
                 {regPassword && (
                   <div className="mt-2">
                     <div className="flex gap-1 mb-1">
@@ -1146,8 +1281,8 @@ const Login = () => {
                     <li className={/[A-Z]/.test(regPassword) ? 'text-success' : 'text-text-muted'}>
                       {/[A-Z]/.test(regPassword) ? '✓' : '○'} One uppercase letter
                     </li>
-                    <li className={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(regPassword) ? 'text-success' : 'text-text-muted'}>
-                      {/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(regPassword) ? '✓' : '○'} One special character
+                    <li className={/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(regPassword) ? 'text-success' : 'text-text-muted'}>
+                      {/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(regPassword) ? '✓' : '○'} One special character
                     </li>
                   </ul>
                 </div>
@@ -1180,8 +1315,8 @@ const Login = () => {
               </div>
 
               {/* ✅ Submit Button - DISABLED until form is valid */}
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full h-11 text-base font-medium"
                 disabled={!isFormValid() || isSubmitting}
               >
@@ -1213,7 +1348,8 @@ const Login = () => {
                 </div>
               )}
             </form>
-          ) : null}
+          </>
+        ) : null}
         </div>
       </div>
     </div>
