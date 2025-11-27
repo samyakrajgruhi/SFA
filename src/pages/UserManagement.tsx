@@ -22,6 +22,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { requireFounder } from '@/hooks/useFounderCheck';
+import {functions} from '@/firebase';
+import {httpsCallable} from 'firebase/functions';
 
 interface UserInfo {
   id: string;
@@ -321,22 +323,20 @@ const UserManagement = () => {
     try {
       setIsProcessing(true);
 
-      // Delete from users collection
-      await deleteDoc(doc(firestore, 'users', foundUser.id));
+      // Call Cloud Function to delete user (Auth + Firestore)
+      const deleteUserFunction = httpsCallable(functions, 'deleteUserAccount');
+      
+      const result = await deleteUserFunction({
+        uid: foundUser.uid,
+        sfaId: foundUser.sfa_id,
+        reason: `Deleted by founder ${user?.sfaId}`
+      });
 
-      // Delete from users_by_uid collection
-      if (foundUser.uid) {
-        const uidDocRef = doc(firestore, 'users_by_uid', foundUser.uid);
-        const uidDocSnapshot = await getDoc(uidDocRef);
-        
-        if (uidDocSnapshot.exists()) {
-          await deleteDoc(uidDocRef);
-        }
-      }
+      console.log('✅ User deletion result:', result.data);
 
       toast({
         title: 'Success',
-        description: `User ${foundUser.full_name} has been permanently deleted`,
+        description: `User ${foundUser.full_name} has been permanently deleted (Auth + Database)`,
       });
 
       setFoundUser(null);
@@ -345,11 +345,39 @@ const UserManagement = () => {
 
     } catch (error) {
       console.error('Error deleting user:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete user. Please try again.',
-        variant: 'destructive'
-      });
+      
+      // Handle specific Firebase Function error codes
+      if (error.code === 'functions/permission-denied') {
+        toast({
+          title: 'Permission Denied',
+          description: 'Only founders can delete user accounts',
+          variant: 'destructive'
+        });
+      } else if (error.code === 'functions/invalid-argument') {
+        toast({
+          title: 'Invalid Input',
+          description: error.message || 'Invalid user data provided',
+          variant: 'destructive'
+        });
+      } else if (error.code === 'functions/not-found') {
+        toast({
+          title: 'User Not Found',
+          description: error.message || 'User document not found',
+          variant: 'destructive'
+        });
+      } else if (error.code === 'functions/internal') {
+        toast({
+          title: 'Server Error',
+          description: error.message || 'Internal server error occurred',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: error.message || 'Failed to delete user. Please try again.',
+          variant: 'destructive'
+        });
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -678,16 +706,22 @@ const UserManagement = () => {
                     </p>
                   </div>
                   <div className="p-3 bg-destructive-light border border-destructive rounded-lg">
-                    <p className="text-sm font-semibold text-destructive mb-1">This will remove:</p>
+                    <p className="text-sm font-semibold text-destructive mb-1">This will permanently remove:</p>
                     <ul className="text-xs text-text-secondary space-y-1 list-disc list-inside">
-                      <li>User account and profile data</li>
-                      <li>All authentication credentials</li>
-                      <li>Access to all system features</li>
-                      <li>Associated records in the database</li>
+                      <li>✅ Firebase Authentication account (email: {foundUser?.email})</li>
+                      <li>✅ User profile from Firestore database</li>
+                      <li>✅ Associated records in users_by_uid collection</li>
+                      <li>⚠️ User will lose all access immediately</li>
+                      <li>📝 Action will be logged in audit trail</li>
                     </ul>
                   </div>
+                  <div className="p-3 bg-warning-light border border-warning rounded-lg">
+                    <p className="text-xs text-text-secondary">
+                      <strong className="text-warning">Note:</strong> Transaction history and payment records will remain in the system for audit purposes. The user will NOT be able to create a new account with the same email until manually re-registered.
+                    </p>
+                  </div>
                   <p className="text-xs text-destructive font-semibold">
-                    Transaction history may still reference this user's ID.
+                    This deletion removes both authentication and database records.
                   </p>
                 </AlertDialogDescription>
               </AlertDialogHeader>

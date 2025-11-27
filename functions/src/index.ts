@@ -10,6 +10,124 @@ interface UpdateEmailData {
   oldEmail?: string;
 }
 
+interface DeleteUserData {
+  uid: string;
+  sfaId: string;
+  reason?: string;
+}
+
+// Function to completely delete a user (Auth + Document)
+export const deleteUserAccount = functions.https.onCall(
+  { region: 'asia-southeast2', cors: true },
+  async (request) => {
+    // 1. Check authentication
+    if (!request.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+    }
+
+    // 2. Check if caller is founder
+    const callerDoc = await admin.firestore()
+      .collection('users_by_uid')
+      .doc(request.auth.uid)
+      .get();
+    
+    if (!callerDoc.exists || !callerDoc.data()?.isFounder) {
+      throw new functions.https.HttpsError('permission-denied', 'Only founders can delete users');
+    }
+
+    // 3. Delete user
+    const data = request.data as DeleteUserData;
+    const { uid, sfaId, reason } = data;
+
+    // Validate inputs
+    if (!uid || !sfaId) {
+      throw new functions.https.HttpsError(
+        'invalid-argument',
+        'UID and SFA ID are required'
+      );
+    }
+
+    try {
+      const callerData = callerDoc.data();
+
+      // Get user data before deletion for audit log
+      const userQuery = await admin.firestore()
+        .collection('users')
+        .where('uid', '==', uid)
+        .get();
+      
+      let userData: any = null;
+      if (!userQuery.empty) {
+        userData = userQuery.docs[0].data();
+      }
+
+      // Delete from Firebase Auth
+      try {
+        await admin.auth().deleteUser(uid);
+        console.log(`✅ Deleted auth user: ${uid}`);
+      } catch (authError: any) {
+        if (authError.code !== 'auth/user-not-found') {
+          console.error('Error deleting auth user:', authError);
+          throw new functions.https.HttpsError(
+            'internal',
+            `Failed to delete authentication account: ${authError.message}`
+          );
+        }
+        console.warn(`⚠️ Auth user not found: ${uid}, continuing with Firestore deletion`);
+      }
+
+      // Delete from Firestore - users collection
+      if (!userQuery.empty) {
+        await userQuery.docs[0].ref.delete();
+        console.log(`✅ Deleted users document: ${userQuery.docs[0].id}`);
+      }
+
+      // Delete from Firestore - users_by_uid collection
+      const uidDocRef = admin.firestore().collection('users_by_uid').doc(uid);
+      const uidDoc = await uidDocRef.get();
+      
+      if (uidDoc.exists) {
+        await uidDocRef.delete();
+        console.log(`✅ Deleted users_by_uid document: ${uid}`);
+      }
+
+      // Log the deletion for audit trail
+      await admin.firestore().collection('audit_logs').add({
+        action: 'user_deleted',
+        performedBy: callerDoc.id,
+        performedBySfaId: callerData?.sfa_id || 'unknown',
+        targetUid: uid,
+        targetSfaId: sfaId,
+        targetEmail: userData?.email || 'unknown',
+        targetName: userData?.full_name || 'unknown',
+        reason: reason || 'No reason provided',
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      return { 
+        success: true, 
+        message: 'User account deleted successfully (Auth + Firestore)',
+        deletedUid: uid,
+        deletedSfaId: sfaId
+      };
+
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      
+      // Re-throw HttpsError as-is
+      if (error instanceof functions.https.HttpsError) {
+        throw error;
+      }
+      
+      // Wrap other errors
+      throw new functions.https.HttpsError(
+        'internal',
+        `Failed to delete user: ${error.message}`
+      );
+    }
+  }
+);
+
 // Cloud Function to update user email 
 export const updateUserEmail = functions.https.onCall(
     {
